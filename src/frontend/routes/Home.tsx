@@ -1,9 +1,13 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router";
 
 
 export default function Home() {
-  return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      Hello world
-    </div>
-  )
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate("/chat");
+  }, []);
+
+  return null;
 }

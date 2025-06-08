@@ -1,18 +1,15 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 import Home from "./routes/Home";
-import Appbar from "@/components/Appbar";
 import Layout from "./routes/Layout";
-import Docs from "./routes/Docs";
-import Contact from "./routes/Contact";
+import Chat from "./routes/Chat";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Layout>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/docs" element={<Docs />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route index path="/" element={<Home />} />
+          <Route path="/chat" element={<Chat />} />
         </Routes>
       </Layout>
     </BrowserRouter>

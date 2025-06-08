@@ -1,24 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import { siteConfig } from "@/config/site.config";
 import { cn } from "@/lib/utils";
 import RootProvider from "@/frontend/providers/RootProvider";
 
-const fontSans = Geist({
-  variable: "--font-geist-sans",
+const font = JetBrains_Mono({
   subsets: ["latin"],
-});
-
-const fontMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const fontHeading = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
+  variable: "--font-jetbrains-mono",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.origin),
@@ -70,10 +60,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable,
-          fontHeading.variable,
-          fontMono.variable
+          "min-h-screen bg-background antialiased",
+          font.className,
         )}
       >
         <RootProvider>
