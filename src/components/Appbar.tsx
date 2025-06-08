@@ -4,7 +4,7 @@ import { RiGithubFill } from "@remixicon/react";
 
 export default function Appbar() {
   return (
-    <div className="flex justify-between items-center p-4 m-4 bg-background">
+    <div className="flex justify-between items-center p-4 m-4">
       <NavLink to="/" className="text-2xl font-bold">t9.chat</NavLink>
       <div className="flex items-center gap-4">
         <ThemeToggler />
