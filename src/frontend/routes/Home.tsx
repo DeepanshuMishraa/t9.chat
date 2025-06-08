@@ -1,21 +1,28 @@
 import { useSession, signIn } from "@/lib/auth-client";
 import { useNavigate } from "react-router";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { RiGoogleFill } from "@remixicon/react";
+import { RiGoogleFill, RiRobot2Fill } from "@remixicon/react";
+import { useEffect } from "react";
 
 export default function Home() {
   const navigate = useNavigate();
   const { data: session } = useSession();
+
+  useEffect(() => {
+    if (session?.user) {
+      navigate("/chat");
+    }
+  }, [session, navigate]);
+
   const handleGoogleSignIn = async () => {
     try {
       await signIn.social({
-        provider: "google"
+        provider: "google",
+        fetchOptions: {
+          onSuccess: () => {
+            navigate("/chat");
+          }
+        }
       });
     } catch (error) {
       console.error("Failed to sign in:", error);
@@ -23,31 +30,34 @@ export default function Home() {
   };
 
   if (session?.user) {
-    navigate("/chat");
+    return null;
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Dialog open defaultOpen>
-        <DialogContent className="gap-6 p-8 max-w-[350px]">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <DialogTitle className="text-2xl font-semibold">
-              Welcome to t9.chat
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Sign in to start chatting
-            </DialogDescription>
+    <div className="h-screen bg-gradient-to-b from-background to-muted">
+      <div className="container mx-auto px-4 py-24">
+        <div className="flex flex-col items-center text-center space-y-8">
+          <div className="relative">
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-primary to-primary/50 blur-2xl opacity-25" />
+            <RiRobot2Fill className="relative w-24 h-24 text-primary" />
           </div>
+          <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/50">
+            t9.chat
+          </h1>
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl">
+            Experience the blazing fast multimodal ai chat
+          </p>
           <Button
+            size="lg"
             variant="outline"
+            className="text-lg px-8 py-6 flex items-center gap-3"
             onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-2 py-6"
           >
             <RiGoogleFill className="w-5 h-5" />
             Continue with Google
           </Button>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </div>
   );
 }
