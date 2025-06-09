@@ -1,19 +1,21 @@
 "use client";
 
-import { ArrowRight, Bot, Check, ChevronDown, Paperclip } from "lucide-react";
+import { ArrowRight, Bot, Check, ChevronDown, Loader2, Paperclip } from "lucide-react";
 import { useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "../components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import { GetResponse } from "@/lib/ai";
 import type { Provider } from "@/store/apiKeyManager";
+import { createMessage, createThread } from "@/frontend/dexie/query";
+import { useParams, useNavigate } from "react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "../components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "motion/react";
 
 const OPENAI_SVG = (
@@ -50,11 +52,14 @@ const OPENAI_SVG = (
 
 export default function ChatInput() {
   const [value, setValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 72,
     maxHeight: 300,
   });
-  const [selectedModel, setSelectedModel] = useState("ge");
+  const [selectedModel, setSelectedModel] = useState("GPT-4-1");
+  const { threadId } = useParams();
+  const navigate = useNavigate();
 
   const AI_MODELS = {
     openai: ["GPT-4-1", "GPT-4-1 Mini"],
@@ -200,31 +205,49 @@ export default function ChatInput() {
   };
 
   const handleSendMessage = async () => {
-    if (!value.trim()) return;
+    if (!value.trim() || isLoading) return;
 
     const message = value.trim();
     setValue("");
     adjustHeight(true);
+    setIsLoading(true);
 
     try {
+      const currentThreadId = threadId || await createThread(crypto.randomUUID());
+      if (!threadId) {
+        navigate(`/chat/${currentThreadId}`);
+      }
+      await createMessage(currentThreadId, {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: message,
+        parts: [{ type: 'text', text: message }],
+        createdAt: new Date(),
+      });
       const { provider, model } = getProviderAndModel(selectedModel);
       const response = await GetResponse(provider, message, model);
-      console.log('AI Response:', response);
+
+      await createMessage(currentThreadId, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: response,
+        parts: [{ type: 'text', text: response }],
+        createdAt: new Date(),
+      });
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      console.error('Error getting AI response:', error);
+      console.error('Error in chat:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-4/6 py-4">
+    <div className="w-full">
       <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
         <div className="relative">
           <div className="relative flex flex-col">
-            <div
-              className="overflow-y-auto"
-              style={{ maxHeight: "400px" }}
-            >
+            <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
               <Textarea
                 id="ai-input-15"
                 value={value}
@@ -239,6 +262,7 @@ export default function ChatInput() {
                   setValue(e.target.value);
                   adjustHeight();
                 }}
+                disabled={isLoading}
               />
             </div>
 
@@ -246,7 +270,7 @@ export default function ChatInput() {
               <div className="absolute left-3 right-3 bottom-3 flex items-center justify-between w-[calc(100%-24px)]">
                 <div className="flex items-center gap-2">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild disabled={isLoading}>
                       <Button
                         variant="ghost"
                         className="flex items-center gap-1 h-8 pl-1 pr-2 text-xs rounded-md dark:text-white hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
@@ -254,21 +278,10 @@ export default function ChatInput() {
                         <AnimatePresence mode="wait">
                           <motion.div
                             key={selectedModel}
-                            initial={{
-                              opacity: 0,
-                              y: -5,
-                            }}
-                            animate={{
-                              opacity: 1,
-                              y: 0,
-                            }}
-                            exit={{
-                              opacity: 0,
-                              y: 5,
-                            }}
-                            transition={{
-                              duration: 0.15,
-                            }}
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 5 }}
+                            transition={{ duration: 0.15 }}
                             className="flex items-center gap-1"
                           >
                             {MODEL_ICONS[selectedModel] || (
@@ -318,11 +331,12 @@ export default function ChatInput() {
                     className={cn(
                       "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
                       "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
-                      "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                      "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white",
+                      isLoading && "opacity-50 cursor-not-allowed"
                     )}
                     aria-label="Attach file"
                   >
-                    <input type="file" className="hidden" />
+                    <input type="file" className="hidden" disabled={isLoading} />
                     <Paperclip className="w-4 h-4 transition-colors" />
                   </label>
                 </div>
@@ -330,20 +344,23 @@ export default function ChatInput() {
                   type="button"
                   className={cn(
                     "rounded-lg p-2 bg-black/5 dark:bg-white/5",
-                    "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
+                    "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
+                    isLoading && "opacity-50 cursor-not-allowed"
                   )}
                   aria-label="Send message"
-                  disabled={!value.trim()}
+                  disabled={!value.trim() || isLoading}
                   onClick={handleSendMessage}
                 >
-                  <ArrowRight
-                    className={cn(
-                      "w-4 h-4 dark:text-white transition-opacity duration-200",
-                      value.trim()
-                        ? "opacity-100"
-                        : "opacity-30"
-                    )}
-                  />
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ArrowRight
+                      className={cn(
+                        "w-4 h-4 dark:text-white transition-opacity duration-200",
+                        value.trim() ? "opacity-100" : "opacity-30"
+                      )}
+                    />
+                  )}
                 </button>
               </div>
             </div>

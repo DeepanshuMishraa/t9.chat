@@ -24,7 +24,7 @@ export const google = createGoogleGenerativeAI({
   const getOpenAIResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: openai(modelName),
-    prompt: message
+    prompt: message,
   })
   //save the chat to the database
   
@@ -35,7 +35,7 @@ export const google = createGoogleGenerativeAI({
 const getGroqResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: groq(modelName),
-    prompt: message
+    prompt: message,
   })
   return text;
 }

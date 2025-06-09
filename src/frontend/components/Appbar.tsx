@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router";
-import { ThemeToggler } from "./toggler";
+import { ThemeToggler } from "../components/toggler";
 import { RiGithubFill } from "@remixicon/react";
 
 export default function Appbar() {
