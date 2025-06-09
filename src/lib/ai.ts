@@ -9,11 +9,11 @@ const getApiKey = (provider: Provider): string => {
   return key || "";
 }
 
-export const openai = createOpenAI({
+const openai = createOpenAI({
   apiKey: getApiKey("openai"),
 })
-
-export const groq = createGroq({
+  
+const groq = createGroq({
   apiKey: getApiKey("groq"),
 })
 
@@ -21,15 +21,18 @@ export const google = createGoogleGenerativeAI({
   apiKey: getApiKey("google"),
 })
 
-export const getOpenAIResponse = async (message: string, modelName: string) => {
+  const getOpenAIResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: openai(modelName),
     prompt: message
   })
+  //save the chat to the database
+  
+
   return text;
 }
 
-export const getGroqResponse = async (message: string, modelName: string) => {
+const getGroqResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: groq(modelName),
     prompt: message
@@ -37,7 +40,7 @@ export const getGroqResponse = async (message: string, modelName: string) => {
   return text;
 }
 
-export const getGoogleResponse = async (message: string, modelName: string) => {
+const getGoogleResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: google(modelName),
     prompt: message

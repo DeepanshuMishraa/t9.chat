@@ -54,7 +54,7 @@ export default function ChatInput() {
     minHeight: 72,
     maxHeight: 300,
   });
-  const [selectedModel, setSelectedModel] = useState("GPT-4-1 Mini");
+  const [selectedModel, setSelectedModel] = useState("ge");
 
   const AI_MODELS = {
     openai: ["GPT-4-1", "GPT-4-1 Mini"],
