@@ -20,19 +20,36 @@ import {
   SidebarTrigger
 } from "../components/ui/sidebar"
 import { getThreads } from "../dexie/query"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { getChatSummary } from "@/lib/ai"
+import { useEffect } from "react"
 
 export default function NavMain() {
   const location = useLocation()
-
+  const queryClient = useQueryClient()
   const { isLoading, data, isError } = useQuery({
     queryKey: ['threads'],
     queryFn: async () => {
       return await getThreads()
     },
-    refetchInterval: 1000,
   });
 
+  const { mutate: getChatSummaryMutation } = useMutation({
+    mutationFn: async (threadId: string) => {
+      return await getChatSummary(threadId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['threads'] })
+    }
+  })
+
+  useEffect(() => {
+    if (data) {
+      data.forEach((thread) => {
+        getChatSummaryMutation(thread.id)
+      })
+    }
+  }, [data])
   if (isLoading) return <div>Loading...</div>
   if (isError) return <div>Error getting threads</div>
 
@@ -140,14 +157,14 @@ export default function NavMain() {
       <SidebarGroup>
         <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
         <SidebarMenu>
-          {data?.map((thread) => (
+          {data?.length === 0 ? <div className="text-center p-4">No chats found</div> : data?.map((thread) => (
             <SidebarMenuItem key={thread.id}>
               <SidebarMenuButton
                 asChild
                 data-active={location.pathname === `/chat/${thread.id}`}
               >
                 <NavLink to={`/chat/${thread.id}`}>
-                  {thread.title}
+                  <span className="text-sm">{thread.title}</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
