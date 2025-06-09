@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export const PROVIDERS = ["google", "openrouter", "openai"] as const;
+export const PROVIDERS = ["google", "groq", "openai"] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 export type ApiKeyManagerState = {
