@@ -2,8 +2,10 @@ import ChatInput from "@/components/ChatInput";
 import { useSidebar } from "@/components/ui/sidebar";
 
 
+
 export default function Chat() {
-  const sidebar = useSidebar()
+  const sidebar = useSidebar();
+
   return (
     <div className="flex flex-col h-full">
       <div className="relative">
@@ -12,5 +14,5 @@ export default function Chat() {
         </div>
       </div>
     </div>
-  )
+  );
 }

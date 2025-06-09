@@ -7,7 +7,7 @@ import { useEffect } from "react";
 export default function Home() {
   const navigate = useNavigate();
   const { data: session } = useSession();
-
+  
   useEffect(() => {
     if (session?.user) {
       navigate("/chat");
