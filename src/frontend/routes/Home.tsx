@@ -1,6 +1,6 @@
 import { useSession, signIn } from "@/lib/auth-client";
 import { useNavigate } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import { RiGoogleFill, RiRobot2Fill } from "@remixicon/react";
 import { useEffect } from "react";
 

@@ -8,7 +8,7 @@ import {
   FileText,
   MessageSquarePlus
 } from "lucide-react"
-import { useLocation } from "react-router"
+import { NavLink, useLocation } from "react-router"
 
 import {
   SidebarGroup,
@@ -18,10 +18,40 @@ import {
   SidebarGroupLabel,
   SidebarSeparator,
   SidebarTrigger
-} from "@/components/ui/sidebar"
+} from "../components/ui/sidebar"
+import { getThreads } from "../dexie/query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { getChatSummary } from "@/lib/ai"
+import { useEffect } from "react"
 
 export default function NavMain() {
   const location = useLocation()
+  const queryClient = useQueryClient()
+  const { isLoading, data, isError } = useQuery({
+    queryKey: ['threads'],
+    queryFn: async () => {
+      return await getThreads()
+    },
+  });
+
+  const { mutate: getChatSummaryMutation } = useMutation({
+    mutationFn: async (threadId: string) => {
+      return await getChatSummary(threadId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['threads'] })
+    }
+  })
+
+  useEffect(() => {
+    if (data) {
+      data.forEach((thread) => {
+        getChatSummaryMutation(thread.id)
+      })
+    }
+  }, [data])
+  if (isLoading) return <div>Loading...</div>
+  if (isError) return <div>Error getting threads</div>
 
   return (
     <>
@@ -36,10 +66,10 @@ export default function NavMain() {
               asChild
               data-active={location.pathname === "/chat/new"}
             >
-              <a href="/chat/new">
+              <NavLink to="/chat">
                 <MessageSquarePlus className="stroke-[1.5px]" />
                 <span>New chat</span>
-              </a>
+              </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
 
@@ -127,38 +157,18 @@ export default function NavMain() {
       <SidebarGroup>
         <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/chat/github-auth"}
-            >
-              <a href="/chat/github-auth">
-                <span>GitHub Authentication Linux</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/chat/exam-notice"}
-            >
-              <a href="/chat/exam-notice">
-                <span>Exam Notice Translation Help</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/chat/fat-loss"}
-            >
-              <a href="/chat/fat-loss">
-                <span>Fat Loss Deficit Plan</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {data?.length === 0 ? <div className="text-center p-4">No chats found</div> : data?.map((thread) => (
+            <SidebarMenuItem key={thread.id}>
+              <SidebarMenuButton
+                asChild
+                data-active={location.pathname === `/chat/${thread.id}`}
+              >
+                <NavLink to={`/chat/${thread.id}`}>
+                  <span className="text-sm">{thread.title}</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
         </SidebarMenu>
       </SidebarGroup>
     </>

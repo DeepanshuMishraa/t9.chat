@@ -20,3 +20,12 @@ enum Provider {
   GROQ = "groq",
   GOOGLE = "google",
 }
+
+
+interface Message {
+  id: string;
+  role: 'user' | 'ai';
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

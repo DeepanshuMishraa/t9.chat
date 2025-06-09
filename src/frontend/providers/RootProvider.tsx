@@ -1,9 +1,12 @@
-import { Toaster } from "@/components/ui/sonner"
+'use client'
+
+import { Toaster } from "../components/ui/sonner"
+import QueryProvider from "./query-provider"
 import { ThemeProvider } from "./theme-provider"
 
 export default function RootProvider({ children }: { children: React.ReactNode }) {
   return (
-    <div>
+    <QueryProvider>
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
@@ -13,6 +16,6 @@ export default function RootProvider({ children }: { children: React.ReactNode }
         {children}
         <Toaster richColors theme="system" />
       </ThemeProvider>
-    </div>
+    </QueryProvider>
   )
 }

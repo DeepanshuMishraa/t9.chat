@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import Home from "./routes/Home";
 import Layout, { ChatLayout } from "./routes/Layout";
 import Chat from "./routes/Chat";
-import BYOK from "@/components/ApiKeyWindow";
+import BYOK from "@/frontend/components/ApiKeyWindow";
 import { useApiKeyStore, PROVIDERS } from "@/store/apiKeyManager";
 
 export default function App() {
@@ -18,6 +18,14 @@ export default function App() {
         } />
         <Route
           path="/chat"
+          element={
+            hasAnyApiKey ? (<ChatLayout>
+              <Chat />
+            </ChatLayout>) : (<BYOK />)
+          }
+        />
+        <Route
+          path="/chat/:threadId"
           element={
             hasAnyApiKey ? (<ChatLayout>
               <Chat />

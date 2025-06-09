@@ -1,15 +1,15 @@
 
 import * as React from "react"
 
-import { NavUser } from "@/components/nav-user"
+import { NavUser } from "@/frontend/components/nav-user"
 
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import NavMain from "./nav-main"
+} from "../components/ui/sidebar"
+import NavMain from "../components/nav-main"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
