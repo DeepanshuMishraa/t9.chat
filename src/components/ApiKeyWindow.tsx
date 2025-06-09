@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "./ui/
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function BYOK() {
   const { setApiKey } = useApiKeyStore();
   const [googleApiKey, setGoogleApiKey] = useState("");
   const [openAiApiKey, setOpenAiApiKey] = useState("");
-  const [openRouterApiKey, setOpenRouterApiKey] = useState("");
+  const [GroqApiKey, setGroqApiKey] = useState("");
 
   return (
     <div className="flex items-center justify-center h-[100svh]">
@@ -26,8 +27,8 @@ export default function BYOK() {
             <Input placeholder="Enter your OpenAI API key" value={openAiApiKey} onChange={(e) => setOpenAiApiKey(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>OpenRouter API Key</Label>
-            <Input placeholder="Enter your OpenRouter API key" value={openRouterApiKey} onChange={(e) => setOpenRouterApiKey(e.target.value)} />
+            <Label>Groq API Key</Label>
+            <Input placeholder="Enter your Groq API key" value={GroqApiKey} onChange={(e) => setGroqApiKey(e.target.value)} />
           </div>
         </CardContent>
 
@@ -35,7 +36,8 @@ export default function BYOK() {
           <Button onClick={() => {
             setApiKey("google", googleApiKey)
             setApiKey("openai", openAiApiKey)
-            setApiKey("openrouter", openRouterApiKey)
+            setApiKey("groq", GroqApiKey)
+            toast.success("API keys saved")
           }} className="cursor-pointer w-full">
             Save API Keys
           </Button>

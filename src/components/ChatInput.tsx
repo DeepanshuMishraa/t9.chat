@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { Button } from "@/components/ui/button";
+import { GetResponse } from "@/lib/ai";
+import type { Provider } from "@/store/apiKeyManager";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,17 +56,16 @@ export default function ChatInput() {
   });
   const [selectedModel, setSelectedModel] = useState("GPT-4-1 Mini");
 
-  const AI_MODELS = [
-    "o3-mini",
-    "Gemini 2.5 Flash",
-    "Claude 3.5 Sonnet",
-    "GPT-4-1 Mini",
-    "GPT-4-1",
-  ];
+  const AI_MODELS = {
+    openai: ["GPT-4-1", "GPT-4-1 Mini"],
+    gemini: ["gemini-2.0-flash", "gemini-2.5-pro-preview-06-05"],
+    groq: ["meta-llama/llama-guard-4-12b", "llama-3.3-70b-versatile"],
+  };
 
   const MODEL_ICONS: Record<string, React.ReactNode> = {
-    "o3-mini": OPENAI_SVG,
-    "Gemini 2.5 Flash": (
+    "GPT-4-1 Mini": OPENAI_SVG,
+    "GPT-4-1": OPENAI_SVG,
+    "gemini-2.0-flash": (
       <svg
         height="1em"
         style={{ flex: "none", lineHeight: "1" }}
@@ -92,43 +93,126 @@ export default function ChatInput() {
         />
       </svg>
     ),
-    "Claude 3.5 Sonnet": (
+    "gemini-2.5-pro-preview-06-05": (
+      <svg
+        height="1em"
+        style={{ flex: "none", lineHeight: "1" }}
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <title>Gemini</title>
+        <defs>
+          <linearGradient
+            id="lobe-icons-gemini-fill"
+            x1="0%"
+            x2="68.73%"
+            y1="100%"
+            y2="30.395%"
+          >
+            <stop offset="0%" stopColor="#1C7DFF" />
+            <stop offset="52.021%" stopColor="#1C69FF" />
+            <stop offset="100%" stopColor="#F0DCD6" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M12 24A14.304 14.304 0 000 12 14.304 14.304 0 0012 0a14.305 14.305 0 0012 12 14.305 14.305 0 00-12 12"
+          fill="url(#lobe-icons-gemini-fill)"
+          fillRule="nonzero"
+        />
+      </svg>
+    ),
+    "meta-llama/llama-guard-4-12b": (
       <div>
         <svg
-          fill="#000"
-          fillRule="evenodd"
-          style={{ flex: "none", lineHeight: "1" }}
-          viewBox="0 0 24 24"
           width="1em"
+          height="1em"
+          viewBox="0 0 400 400"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="dark:hidden block"
         >
-          <title>Anthropic Icon Light</title>
-          <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
+          <title>Groq Icon Light</title>
+          <path d="M400 200C400 310.457 310.457 400 200 400C89.5431 400 0 310.457 0 200C0 89.5431 89.5431 0 200 0C310.457 0 400 89.5431 400 200Z" fill="black" />
+          <path fillRule="evenodd" clipRule="evenodd" d="M200.5 326C270.423 326 327 269.423 327 199.5C327 129.577 270.423 73 200.5 73C130.577 73 74 129.577 74 199.5C74 269.423 130.577 326 200.5 326ZM200.5 284C247.168 284 285 246.168 285 199.5C285 152.832 247.168 115 200.5 115C153.832 115 116 152.832 116 199.5C116 246.168 153.832 284 200.5 284Z" fill="white" />
         </svg>
         <svg
-          fill="#ffff"
-          fillRule="evenodd"
-          style={{ flex: "none", lineHeight: "1" }}
-          viewBox="0 0 24 24"
           width="1em"
+          height="1em"
+          viewBox="0 0 400 400"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="hidden dark:block"
         >
-          <title>Anthropic Icon Dark</title>
-          <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
+          <title>Groq Icon Dark</title>
+          <path d="M400 200C400 310.457 310.457 400 200 400C89.5431 400 0 310.457 0 200C0 89.5431 89.5431 0 200 0C310.457 0 400 89.5431 400 200Z" fill="white" />
+          <path fillRule="evenodd" clipRule="evenodd" d="M200.5 326C270.423 326 327 269.423 327 199.5C327 129.577 270.423 73 200.5 73C130.577 73 74 129.577 74 199.5C74 269.423 130.577 326 200.5 326ZM200.5 284C247.168 284 285 246.168 285 199.5C285 152.832 247.168 115 200.5 115C153.832 115 116 152.832 116 199.5C116 246.168 153.832 284 200.5 284Z" fill="black" />
         </svg>
       </div>
     ),
-    "GPT-4-1 Mini": OPENAI_SVG,
-    "GPT-4-1": OPENAI_SVG,
+    "llama-3.3-70b-versatile": (
+      <div>
+        <svg
+          width="1em"
+          height="1em"
+          viewBox="0 0 400 400"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="dark:hidden block"
+        >
+          <title>Groq Icon Light</title>
+          <path d="M400 200C400 310.457 310.457 400 200 400C89.5431 400 0 310.457 0 200C0 89.5431 89.5431 0 200 0C310.457 0 400 89.5431 400 200Z" fill="black" />
+          <path fillRule="evenodd" clipRule="evenodd" d="M200.5 326C270.423 326 327 269.423 327 199.5C327 129.577 270.423 73 200.5 73C130.577 73 74 129.577 74 199.5C74 269.423 130.577 326 200.5 326ZM200.5 284C247.168 284 285 246.168 285 199.5C285 152.832 247.168 115 200.5 115C153.832 115 116 152.832 116 199.5C116 246.168 153.832 284 200.5 284Z" fill="white" />
+        </svg>
+        <svg
+          width="1em"
+          height="1em"
+          viewBox="0 0 400 400"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="hidden dark:block"
+        >
+          <title>Groq Icon Dark</title>
+          <path d="M400 200C400 310.457 310.457 400 200 400C89.5431 400 0 310.457 0 200C0 89.5431 89.5431 0 200 0C310.457 0 400 89.5431 400 200Z" fill="white" />
+          <path fillRule="evenodd" clipRule="evenodd" d="M200.5 326C270.423 326 327 269.423 327 199.5C327 129.577 270.423 73 200.5 73C130.577 73 74 129.577 74 199.5C74 269.423 130.577 326 200.5 326ZM200.5 284C247.168 284 285 246.168 285 199.5C285 152.832 247.168 115 200.5 115C153.832 115 116 152.832 116 199.5C116 246.168 153.832 284 200.5 284Z" fill="black" />
+        </svg>
+      </div>
+    ),
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      setValue("");
-      adjustHeight(true);
+      await handleSendMessage();
+    }
+  };
+
+  const getProviderAndModel = (modelName: string): { provider: Provider; model: string } => {
+    if (AI_MODELS.openai.includes(modelName)) {
+      return { provider: "openai", model: modelName };
+    }
+    if (AI_MODELS.groq.includes(modelName)) {
+      return { provider: "groq", model: modelName };
+    }
+    if (AI_MODELS.gemini.includes(modelName)) {
+      return { provider: "google", model: modelName };
+    }
+    throw new Error(`Unknown model: ${modelName}`);
+  };
+
+  const handleSendMessage = async () => {
+    if (!value.trim()) return;
+
+    const message = value.trim();
+    setValue("");
+    adjustHeight(true);
+
+    try {
+      const { provider, model } = getProviderAndModel(selectedModel);
+      const response = await GetResponse(provider, message, model);
+      console.log('AI Response:', response);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error getting AI response:', error);
     }
   };
 
@@ -187,11 +271,9 @@ export default function ChatInput() {
                             }}
                             className="flex items-center gap-1"
                           >
-                            {
-                              MODEL_ICONS[
-                              selectedModel
-                              ]
-                            }
+                            {MODEL_ICONS[selectedModel] || (
+                              <Bot className="w-4 h-4 opacity-50" />
+                            )}
                             {selectedModel}
                             <ChevronDown className="w-3 h-3 opacity-50" />
                           </motion.div>
@@ -205,26 +287,29 @@ export default function ChatInput() {
                         "bg-gradient-to-b from-white via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-800"
                       )}
                     >
-                      {AI_MODELS.map((model) => (
-                        <DropdownMenuItem
-                          key={model}
-                          onSelect={() =>
-                            setSelectedModel(model)
-                          }
-                          className="flex items-center justify-between gap-2"
-                        >
-                          <div className="flex items-center gap-2">
-                            {MODEL_ICONS[model] || (
-                              <Bot className="w-4 h-4 opacity-50" />
-                            )}{" "}
-                            {/* Use mapped SVG or fallback */}
-                            <span>{model}</span>
+                      {Object.entries(AI_MODELS).map(([provider, models]) => (
+                        <div key={provider}>
+                          <div className="px-2 py-1.5 text-xs font-medium text-black/50 dark:text-white/50 uppercase">
+                            {provider}
                           </div>
-                          {selectedModel ===
-                            model && (
-                              <Check className="w-4 h-4 text-blue-500" />
-                            )}
-                        </DropdownMenuItem>
+                          {models.map((model) => (
+                            <DropdownMenuItem
+                              key={model}
+                              onSelect={() => setSelectedModel(model)}
+                              className="flex items-center justify-between gap-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                {MODEL_ICONS[model] || (
+                                  <Bot className="w-4 h-4 opacity-50" />
+                                )}
+                                <span>{model}</span>
+                              </div>
+                              {selectedModel === model && (
+                                <Check className="w-4 h-4 text-blue-500" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </div>
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -249,6 +334,7 @@ export default function ChatInput() {
                   )}
                   aria-label="Send message"
                   disabled={!value.trim()}
+                  onClick={handleSendMessage}
                 >
                   <ArrowRight
                     className={cn(

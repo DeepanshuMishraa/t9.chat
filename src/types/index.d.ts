@@ -14,3 +14,9 @@ export type SiteConfig = {
     x: string;
   }
 }
+
+enum Provider {
+  OPENAI = "openai",
+  GROQ = "groq",
+  GOOGLE = "google",
+}
