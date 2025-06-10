@@ -20,13 +20,11 @@ import {
   SidebarTrigger
 } from "../components/ui/sidebar"
 import { getThreads } from "../dexie/query"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { getChatSummary } from "@/lib/ai"
-import { useEffect } from "react"
 
 export default function NavMain() {
   const location = useLocation()
-  const queryClient = useQueryClient()
   const { isLoading, data, isError } = useQuery({
     queryKey: ['threads'],
     queryFn: async () => {
@@ -34,22 +32,12 @@ export default function NavMain() {
     },
   });
 
-  const { mutate: getChatSummaryMutation } = useMutation({
-    mutationFn: async (threadId: string) => {
-      return await getChatSummary(threadId)
+  const chatSummary = useQuery({
+    queryKey: ['chatSummary'],
+    queryFn: async () => {
+      return await getChatSummary(data?.map((thread) => thread.id).join(",") || "")
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['threads'] })
-    }
   })
-
-  useEffect(() => {
-    if (data) {
-      data.forEach((thread) => {
-        getChatSummaryMutation(thread.id)
-      })
-    }
-  }, [data])
   if (isLoading) return <div>Loading...</div>
   if (isError) return <div>Error getting threads</div>
 
@@ -164,7 +152,7 @@ export default function NavMain() {
                 data-active={location.pathname === `/chat/${thread.id}`}
               >
                 <NavLink to={`/chat/${thread.id}`}>
-                  <span className="text-sm">{thread.title}</span>
+                  <span className="text-sm">{chatSummary.data?.find((summary) => summary.threadId === thread.id)?.content || thread.title}</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
