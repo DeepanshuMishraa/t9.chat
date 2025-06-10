@@ -1,23 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { idb } from '@/frontend/dexie/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-
+import { UIMessage } from 'ai';
+import MarkdownRenderer from './Markdown';
 
 interface MessagesProps {
   threadId: string;
+  streamingMessages?: UIMessage[];
 }
 
-export default function Messages({ threadId }: MessagesProps) {
+export default function Messages({ threadId, streamingMessages = [] }: MessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Live query messages for the current thread
-  const messages = useLiveQuery(
+  const storedMessages = useLiveQuery(
     async () => {
       const thread = await idb.threads.get(threadId);
       if (!thread) return null;
@@ -30,12 +28,32 @@ export default function Messages({ threadId }: MessagesProps) {
     [threadId]
   );
 
+  const allMessages = useMemo(() => {
+    if (!storedMessages) return [];
+
+    const latestStreamingMessage = streamingMessages.length > 0
+      ? streamingMessages[streamingMessages.length - 1]
+      : null;
+
+    const shouldShowStreaming = latestStreamingMessage &&
+      !storedMessages.some(storedMsg => storedMsg.id === latestStreamingMessage.id);
+
+    return [
+      ...storedMessages,
+      ...(shouldShowStreaming ? [latestStreamingMessage] : [])
+    ].sort((a, b) => {
+      const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)) : new Date(0);
+      const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) : new Date(0);
+      return dateA.getTime() - dateB.getTime();
+    });
+  }, [storedMessages, streamingMessages]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [allMessages.length]); 
 
-  if (messages === null) return null;
-  if (messages === undefined) return (
+  if (storedMessages === null) return null;
+  if (storedMessages === undefined) return (
     <div className="flex items-center justify-center h-full">
       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
     </div>
@@ -43,12 +61,12 @@ export default function Messages({ threadId }: MessagesProps) {
 
   return (
     <div className="flex flex-col gap-4 px-4">
-      {messages.length === 0 ? (
+      {allMessages.length === 0 ? (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           Start a new conversation
         </div>
       ) : (
-        messages.map((message) => (
+        allMessages.map((message) => (
           <div
             key={message.id}
             className={cn(
@@ -65,58 +83,7 @@ export default function Messages({ threadId }: MessagesProps) {
                   : 'bg-muted prose dark:prose-invert prose-sm sm:prose-base max-w-none'
               )}
             >
-              <Markdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({ className, children, ...props }) {
-                    const match = /language-(\w+)/.exec(className || '');
-                    const isInline = !match;
-                    return isInline ? (
-                      <code {...props} className="rounded px-1 py-0.5 bg-muted-foreground/20">
-                        {children}
-                      </code>
-                    ) : (
-                      <div className="rounded-md overflow-hidden">
-                        <SyntaxHighlighter
-                          style={oneDark}
-                          language={match[1]}
-                          PreTag="div"
-                          className="!my-0"
-                        >
-                          {String(children).replace(/\n$/, '')}
-                        </SyntaxHighlighter>
-                      </div>
-                    );
-                  },
-                  p({ children }) {
-                    return <p className="mb-4 last:mb-0">{children}</p>
-                  },
-                  ul({ children }) {
-                    return <ul className="list-disc pl-4 mb-4 last:mb-0">{children}</ul>
-                  },
-                  ol({ children }) {
-                    return <ol className="list-decimal pl-4 mb-4 last:mb-0">{children}</ol>
-                  },
-                  li({ children }) {
-                    return <li className="mb-1">{children}</li>
-                  },
-                  blockquote({ children }) {
-                    return <blockquote className="border-l-4 border-primary/50 pl-4 italic">{children}</blockquote>
-                  },
-                  a({ children, href }) {
-                    return <a href={href} className="text-primary underline hover:no-underline" target="_blank" rel="noopener noreferrer">{children}</a>
-                  },
-                  table({ children }) {
-                    return (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-border">{children}</table>
-                      </div>
-                    )
-                  }
-                }}
-              >
-                {message.content}
-              </Markdown>
+              <MarkdownRenderer content={message.content} />
             </div>
           </div>
         ))

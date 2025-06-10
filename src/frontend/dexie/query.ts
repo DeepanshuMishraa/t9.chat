@@ -29,7 +29,7 @@ export const createMessage = async (threadId: string, message: UIMessage) => {
       id: message.id,
       threadId,
       parts: message.parts,
-      role: message.role as 'user' | 'ai',
+      role: message.role as 'user' | 'assistant',
       content: message.content,
       createdAt: message.createdAt || new Date(),
     });
@@ -37,5 +37,20 @@ export const createMessage = async (threadId: string, message: UIMessage) => {
     await idb.threads.update(threadId, {
       lastMessageAt: message.createdAt || new Date(),
     });
+  });
+};
+
+export const getMessages = async (threadId: string) => {
+  return await idb.messages
+    .where('threadId')
+    .equals(threadId)
+    .sortBy('createdAt');
+};
+
+export const updateMessage = async (messageId: string, updates: Partial<UIMessage>) => {
+  return await idb.messages.update(messageId, {
+    content: updates.content,
+    parts: updates.parts,
+    createdAt: updates.createdAt || new Date(),
   });
 };
