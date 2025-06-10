@@ -42,7 +42,7 @@ export default function Messages({ threadId }: MessagesProps) {
   );
 
   return (
-    <div className="flex flex-col gap-4 px-4 pb-32">
+    <div className="flex flex-col gap-4 px-4">
       {messages.length === 0 ? (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           Start a new conversation
