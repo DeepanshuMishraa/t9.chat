@@ -27,6 +27,7 @@ const getOpenAIResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: openai(modelName),
     prompt: message,
+    system: `Always return in markdown format.`,
   })
   return text;
 }
@@ -35,6 +36,7 @@ const getGroqResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: groq(modelName),
     prompt: message,
+    system: `Always return in markdown format.`,
   })
   return text;
 }
@@ -42,7 +44,8 @@ const getGroqResponse = async (message: string, modelName: string) => {
 const getGoogleResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: google(modelName),
-    prompt: message
+    prompt: message,
+    system: `Always return in markdown format.`,
   })
   return text;
 }
