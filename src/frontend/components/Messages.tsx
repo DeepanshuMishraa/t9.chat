@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { idb } from '@/frontend/dexie/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { cn } from '@/lib/utils';
@@ -28,21 +28,29 @@ export default function Messages({ threadId, streamingMessages = [] }: MessagesP
     [threadId]
   );
 
-  // Combine stored messages with streaming messages, avoiding duplicates
-  const allMessages = [
-    ...(storedMessages || []),
-    ...streamingMessages.filter(streamMsg =>
-      !storedMessages?.some(storedMsg => storedMsg.id === streamMsg.id)
-    )
-  ].sort((a, b) => {
-    const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)) : new Date(0);
-    const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) : new Date(0);
-    return dateA.getTime() - dateB.getTime();
-  });
+  const allMessages = useMemo(() => {
+    if (!storedMessages) return [];
+
+    const latestStreamingMessage = streamingMessages.length > 0
+      ? streamingMessages[streamingMessages.length - 1]
+      : null;
+
+    const shouldShowStreaming = latestStreamingMessage &&
+      !storedMessages.some(storedMsg => storedMsg.id === latestStreamingMessage.id);
+
+    return [
+      ...storedMessages,
+      ...(shouldShowStreaming ? [latestStreamingMessage] : [])
+    ].sort((a, b) => {
+      const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)) : new Date(0);
+      const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) : new Date(0);
+      return dateA.getTime() - dateB.getTime();
+    });
+  }, [storedMessages, streamingMessages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [allMessages]);
+  }, [allMessages.length]); 
 
   if (storedMessages === null) return null;
   if (storedMessages === undefined) return (

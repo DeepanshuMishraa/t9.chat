@@ -3,7 +3,7 @@ import { createGroq } from "@ai-sdk/groq"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { generateText, streamText } from "ai"
 
-export const maxDuration = 60;
+export const maxDuration = 10000;
 
 const getOpenAIResponse = async (message: string, messages: any[], modelName: string, apiKey: string) => {
   const openai = createOpenAI({ apiKey });
