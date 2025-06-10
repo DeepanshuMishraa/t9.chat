@@ -27,6 +27,7 @@ const getOpenAIResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: openai(modelName),
     prompt: message,
+    system: `Always return in markdown format.`,
   })
   return text;
 }
@@ -35,6 +36,7 @@ const getGroqResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: groq(modelName),
     prompt: message,
+    system: `Always return in markdown format.`,
   })
   return text;
 }
@@ -42,7 +44,8 @@ const getGroqResponse = async (message: string, modelName: string) => {
 const getGoogleResponse = async (message: string, modelName: string) => {
   const { text } = await generateText({
     model: google(modelName),
-    prompt: message
+    prompt: message,
+    system: `Always return in markdown format.`,
   })
   return text;
 }
@@ -67,34 +70,49 @@ export const GetResponse = async (provider: Provider, message: string, modelName
   }
 }
 
-export const getChatSummary = async (threadId: string) => {
+interface ChatSummary {
+  threadId: string;
+  content: string;
+}
+
+export const getChatSummary = async (threadIds: string): Promise<ChatSummary[]> => {
   try {
-    const messages = await idb.messages.where("threadId").equals(threadId).toArray();
+    if (!threadIds) return [];
 
-    if (!messages || messages.length === 0) {
-      await updateThread(threadId, "New Chat");
-      return;
-    }
-    const formattedMessages = messages.map(msg => `${msg.role}: ${msg.content}`).join("\n");
+    const summaries: ChatSummary[] = [];
+    const ids = threadIds.split(',');
 
-    const systemPrompt = `Given this conversation, create a concise title (max 6 words) that captures its main topic:
+    for (const threadId of ids) {
+      const messages = await idb.messages.where("threadId").equals(threadId).toArray();
+
+      if (!messages || messages.length === 0) {
+        summaries.push({ threadId, content: "New Chat" });
+        await updateThread(threadId, "New Chat");
+        continue;
+      }
+
+      const formattedMessages = messages.map(msg => `${msg.role}: ${msg.content}`).join("\n");
+      const systemPrompt = `Given this conversation, create a concise title (max 6 words) that captures its main topic:
 
 ${formattedMessages}
 
 Title:`;
 
-    // const { text } = await generateText({
-    //   model: ,
-    //   prompt: systemPrompt,
-    // });
+      const { text } = await generateText({
+        model: google("gemini-1.5-flash"),
+        prompt: systemPrompt,
+      });
 
-    const text= "new chat"
+      const cleanTitle = text.replace(/["'\n]/g, '').trim();
+      const title = cleanTitle || "New Chat";
 
-    const cleanTitle = text.replace(/["'\n]/g, '').trim();
+      summaries.push({ threadId, content: title });
+      await updateThread(threadId, title);
+    }
 
-    await updateThread(threadId, cleanTitle || "New Chat");
+    return summaries;
   } catch (error) {
     console.error("Error generating chat summary:", error);
-    await updateThread(threadId, "New Chat");
+    return [];
   }
 }
