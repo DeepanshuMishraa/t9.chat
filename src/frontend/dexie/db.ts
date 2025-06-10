@@ -12,7 +12,7 @@ interface Thread {
 interface Message {
   id: string;
   threadId: string;
-  role: 'user' | 'ai';
+  role: 'user' | 'assistant';
   content: string;
   createdAt: Date;
   parts: UIMessage['parts'];
