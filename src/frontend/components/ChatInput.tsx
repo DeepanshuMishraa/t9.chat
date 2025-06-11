@@ -1,5 +1,5 @@
 import { ArrowRight, Bot, Check, ChevronDown, Loader2, Paperclip } from "lucide-react";
-import {useState } from "react";
+import { useState } from "react";
 import { Textarea } from "../components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "motion/react";
-import { UseChatHelpers } from "@ai-sdk/react";
+import { UseChatHelpers } from "@ai-sdk/react
 import { useApiKeyStore } from "@/store/apiKeyManager";
 
 interface ChatInputProps {
@@ -217,7 +217,6 @@ export default function ChatInput({ chatState }: ChatInputProps) {
     const messageContent = input.trim();
 
     try {
-      // Create thread if we don't have one
       let currentThreadId = threadId;
       if (!threadId) {
         currentThreadId = crypto.randomUUID();
@@ -225,16 +224,13 @@ export default function ChatInput({ chatState }: ChatInputProps) {
         navigate(`/chat/${currentThreadId}`);
       }
 
-      // Save the user's message to Dexie first
       const userMessage = {
         id: crypto.randomUUID(),
         role: 'user' as const,
         content: messageContent,
-        parts: [{ type: 'text' as const, text: messageContent }],
         createdAt: new Date(),
       };
 
-      await createMessage(currentThreadId!, userMessage);
       setInput('');
 
       await append(userMessage, {
@@ -242,6 +238,7 @@ export default function ChatInput({ chatState }: ChatInputProps) {
           model: selectedModel,
           provider: getProviderAndModel(selectedModel).provider,
           apiKey: getApiKey(getProviderAndModel(selectedModel).provider),
+          threadId: currentThreadId,
         }
       });
 

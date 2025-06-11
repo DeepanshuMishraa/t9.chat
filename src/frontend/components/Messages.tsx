@@ -9,39 +9,25 @@ import MarkdownRenderer from './Markdown';
 interface MessagesProps {
   threadId: string;
   streamingMessages?: UIMessage[];
+  storedMessages?: any[] | null;
 }
 
-export default function Messages({ threadId, streamingMessages = [] }: MessagesProps) {
+export default function Messages({ threadId, streamingMessages = [], storedMessages }: MessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Live query messages for the current thread
-  const storedMessages = useLiveQuery(
-    async () => {
-      const thread = await idb.threads.get(threadId);
-      if (!thread) return null;
-
-      return await idb.messages
-        .where('threadId')
-        .equals(threadId)
-        .sortBy('createdAt');
-    },
-    [threadId]
-  );
-
   const allMessages = useMemo(() => {
-    if (!storedMessages) return [];
+    if (!storedMessages) return streamingMessages;
 
-    const latestStreamingMessage = streamingMessages.length > 0
-      ? streamingMessages[streamingMessages.length - 1]
-      : null;
+    // Get all streaming messages that aren't already stored
+    const newStreamingMessages = streamingMessages.filter(streamMsg =>
+      !storedMessages.some(storedMsg => storedMsg.id === streamMsg.id)
+    );
 
-    const shouldShowStreaming = latestStreamingMessage &&
-      !storedMessages.some(storedMsg => storedMsg.id === latestStreamingMessage.id);
+    // Combine stored and new streaming messages
+    const combined = [...storedMessages, ...newStreamingMessages];
 
-    return [
-      ...storedMessages,
-      ...(shouldShowStreaming ? [latestStreamingMessage] : [])
-    ].sort((a, b) => {
+    // Sort by creation date
+    return combined.sort((a, b) => {
       const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)) : new Date(0);
       const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) : new Date(0);
       return dateA.getTime() - dateB.getTime();
@@ -50,7 +36,7 @@ export default function Messages({ threadId, streamingMessages = [] }: MessagesP
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [allMessages.length]); 
+  }, [allMessages.length]);
 
   if (storedMessages === null) return null;
   if (storedMessages === undefined) return (
