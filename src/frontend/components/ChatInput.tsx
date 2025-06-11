@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "motion/react";
-import { UseChatHelpers } from "@ai-sdk/react
+import { UseChatHelpers } from "@ai-sdk/react"
 import { useApiKeyStore } from "@/store/apiKeyManager";
 
 interface ChatInputProps {
