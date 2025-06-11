@@ -10,9 +10,27 @@ interface MessagesProps {
   threadId: string;
   streamingMessages?: UIMessage[];
   storedMessages?: any[] | null;
+  isLoading?: boolean;
 }
 
-export default function Messages({ threadId, streamingMessages = [], storedMessages }: MessagesProps) {
+function ImageGenerationSkeleton() {
+  return (
+    <div className="relative w-full max-w-lg mx-auto my-4">
+      <div className="aspect-square bg-muted rounded-lg animate-pulse flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-muted-foreground">Generating image...</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MessageContent({ message }: { message: any }) {
+  return <MarkdownRenderer content={message.content || ''} />;
+}
+
+export default function Messages({ threadId, streamingMessages = [], storedMessages, isLoading }: MessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const allMessages = useMemo(() => {
@@ -23,10 +41,8 @@ export default function Messages({ threadId, streamingMessages = [], storedMessa
       !storedMessages.some(storedMsg => storedMsg.id === streamMsg.id)
     );
 
-    // Combine stored and new streaming messages
     const combined = [...storedMessages, ...newStreamingMessages];
 
-    // Sort by creation date
     return combined.sort((a, b) => {
       const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)) : new Date(0);
       const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)) : new Date(0);
@@ -52,27 +68,29 @@ export default function Messages({ threadId, streamingMessages = [], storedMessa
           Start a new conversation
         </div>
       ) : (
-        allMessages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              'flex flex-col m-4',
-              message.role === 'user' ? 'items-end' : 'items-start'
-            )}
-          >
+        allMessages.map((message, index) => {
+          return (
             <div
+              key={message.id}
               className={cn(
-                'px-4 py-3 rounded-xl',
-                'max-w-[85%] md:max-w-[75%] lg:max-w-[65%]',
-                message.role === 'user'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted prose dark:prose-invert prose-sm sm:prose-base max-w-none'
+                'flex flex-col m-4',
+                message.role === 'user' ? 'items-end' : 'items-start'
               )}
             >
-              <MarkdownRenderer content={message.content} />
+              <div
+                className={cn(
+                  'px-4 py-3 rounded-xl',
+                  'max-w-[85%] md:max-w-[75%] lg:max-w-[65%]',
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted prose dark:prose-invert prose-sm sm:prose-base max-w-none'
+                )}
+              >
+                <MessageContent message={message} />
+              </div>
             </div>
-          </div>
-        ))
+          );
+        })
       )}
       <div ref={bottomRef} />
     </div>

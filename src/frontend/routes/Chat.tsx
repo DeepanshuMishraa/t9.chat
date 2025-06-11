@@ -123,6 +123,7 @@ export default function Chat() {
             threadId={threadId}
             streamingMessages={chatState.messages}
             storedMessages={storedMessages}
+            isLoading={chatState.isLoading}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">

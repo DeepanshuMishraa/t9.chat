@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { Button } from "../components/ui/button";
 import type { Provider } from "@/store/apiKeyManager";
-import { createMessage, createThread } from "@/frontend/dexie/query";
+import { createThread, createMessage } from "@/frontend/dexie/query";
 import { useParams, useNavigate } from "react-router";
 import {
   DropdownMenu,
@@ -56,6 +56,7 @@ const OPENAI_SVG = (
 
 export default function ChatInput({ chatState }: ChatInputProps) {
   const [selectedModel, setSelectedModel] = useState("GPT-4-1");
+  const [imageGenerating, setImageGenerating] = useState(false);
   const { threadId } = useParams();
   const navigate = useNavigate();
   const { getApiKey } = useApiKeyStore();
@@ -228,19 +229,118 @@ export default function ChatInput({ chatState }: ChatInputProps) {
         id: crypto.randomUUID(),
         role: 'user' as const,
         content: messageContent,
+        parts: [{ type: 'text' as const, text: messageContent }],
         createdAt: new Date(),
       };
 
+      // Check if this is an image generation request
+      const isImageRequest = messageContent.toLowerCase().includes('image') ||
+        messageContent.toLowerCase().includes('generate') ||
+        messageContent.toLowerCase().includes('create') ||
+        messageContent.toLowerCase().includes('draw');
+
       setInput('');
 
-      await append(userMessage, {
-        body: {
-          model: selectedModel,
-          provider: getProviderAndModel(selectedModel).provider,
-          apiKey: getApiKey(getProviderAndModel(selectedModel).provider),
-          threadId: currentThreadId,
+      if (isImageRequest) {
+        // Handle image generation separately without streaming
+        const googleApiKey = getApiKey('google');
+        if (!googleApiKey) {
+          alert('Please configure your Google API key in the settings first.');
+          return;
         }
-      });
+
+    
+        await createMessage(currentThreadId!, userMessage);
+        setImageGenerating(true);
+
+        // Make direct API call for image generation
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              messages: [{ role: userMessage.role, content: userMessage.content }],
+              model: selectedModel,
+              provider: getProviderAndModel(selectedModel).provider,
+              apiKey: getApiKey(getProviderAndModel(selectedModel).provider),
+              googleApiKey: googleApiKey,
+            })
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API error:', errorText);
+            throw new Error(`Failed to generate image: ${response.status} ${errorText}`);
+          }
+
+          // Get the plain text response
+          const fullContent = await response.text();
+
+          if (!fullContent || fullContent.trim().length === 0) {
+            throw new Error('Empty response from image generation API');
+          }
+
+          const aiMessage = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: fullContent,
+            parts: [{ type: 'text' as const, text: fullContent }],
+            createdAt: new Date(),
+          };
+
+          await createMessage(currentThreadId!, aiMessage);
+          console.log('Image generation completed successfully');
+
+        } catch (error) {
+          console.error('Image generation failed:', error);
+
+          let errorContent = 'Sorry, I failed to generate the image. Please try again.';
+          if (error instanceof Error) {
+            if (error.name === 'AbortError') {
+              errorContent = 'Image generation timed out. Please try again with a simpler prompt.';
+            } else {
+              errorContent = `Image generation failed: ${error.message}`;
+            }
+          }
+
+          const errorMessage = {
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            content: errorContent,
+            parts: [{ type: 'text' as const, text: errorContent }],
+            createdAt: new Date(),
+          };
+          await createMessage(currentThreadId!, errorMessage);
+        } finally {
+          console.log('Clearing image generation loading state');
+          setImageGenerating(false);
+        }
+
+      } else {
+        // Regular chat with streaming
+        const providerForRequest = getProviderAndModel(selectedModel).provider;
+        const apiKeyForRequest = getApiKey(providerForRequest);
+
+        if (!apiKeyForRequest) {
+          alert(`Please configure your ${getProviderAndModel(selectedModel).provider} API key in the settings first.`);
+          return;
+        }
+
+        await append(userMessage, {
+          body: {
+            model: selectedModel,
+            provider: providerForRequest,
+            apiKey: apiKeyForRequest,
+            threadId: currentThreadId,
+          }
+        });
+      }
 
     } catch (error) {
       console.error('Error in chat:', error);
@@ -267,7 +367,7 @@ export default function ChatInput({ chatState }: ChatInputProps) {
                   handleInputChange(e);
                   adjustHeight();
                 }}
-                disabled={isLoading}
+                disabled={isLoading || imageGenerating}
               />
             </div>
 
@@ -275,7 +375,7 @@ export default function ChatInput({ chatState }: ChatInputProps) {
               <div className="absolute left-3 right-3 bottom-3 flex items-center justify-between w-[calc(100%-24px)]">
                 <div className="flex items-center gap-2">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild disabled={isLoading}>
+                    <DropdownMenuTrigger asChild disabled={isLoading || imageGenerating}>
                       <Button
                         variant="ghost"
                         className="flex items-center gap-1 h-8 pl-1 pr-2 text-xs rounded-md dark:text-white hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
@@ -341,7 +441,7 @@ export default function ChatInput({ chatState }: ChatInputProps) {
                     )}
                     aria-label="Attach file"
                   >
-                    <input type="file" className="hidden" disabled={isLoading} />
+                    <input type="file" className="hidden" disabled={isLoading || imageGenerating} />
                     <Paperclip className="w-4 h-4 transition-colors" />
                   </label>
                 </div>
@@ -353,10 +453,10 @@ export default function ChatInput({ chatState }: ChatInputProps) {
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
                   aria-label="Send message"
-                  disabled={!input.trim() || isLoading}
+                  disabled={!input.trim() || isLoading || imageGenerating}
                   onClick={handleMessageSubmit}
                 >
-                  {isLoading ? (
+                  {isLoading || imageGenerating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <ArrowRight
