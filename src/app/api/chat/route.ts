@@ -28,7 +28,9 @@ const getGroqResponse = async (messages: any[], modelName: string, apiKey: strin
 const getGoogleResponse = async (messages: any[], modelName: string, apiKey: string) => {
   const google = createGoogleGenerativeAI({ apiKey });
   const result = await streamText({
-    model: google(modelName),
+    model: google(modelName, {
+      useSearchGrounding: true
+    }),
     messages: messages,
     system: "Always return in markdown format.",
   })
