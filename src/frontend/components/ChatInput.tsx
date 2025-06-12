@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, Check, ChevronDown, Loader2, Paperclip } from "lucide-react";
+import { ArrowRight, Bot, Check, ChevronDown, Loader2, LucideSearch, Paperclip } from "lucide-react";
 import { useState } from "react";
 import { Textarea } from "../components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import type { Provider } from "@/store/apiKeyManager";
 import { createThread, createMessage } from "@/frontend/dexie/query";
 import { useParams, useNavigate } from "react-router";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -249,7 +250,7 @@ export default function ChatInput({ chatState }: ChatInputProps) {
           return;
         }
 
-    
+
         await createMessage(currentThreadId!, userMessage);
         setImageGenerating(true);
 
