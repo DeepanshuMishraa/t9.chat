@@ -1,12 +1,16 @@
 'use client'
 
+import { extractRouterConfig } from "uploadthing/server";
 import { Toaster } from "../components/ui/sonner"
 import QueryProvider from "./query-provider"
 import { ThemeProvider } from "./theme-provider"
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { ourFileRouter } from "@/app/api/uploadthing/core";
 
 export default function RootProvider({ children }: { children: React.ReactNode }) {
   return (
     <QueryProvider>
+      <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
       <ThemeProvider
         attribute="class"
         defaultTheme="system"

@@ -17,6 +17,8 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { UseChatHelpers } from "@ai-sdk/react"
 import { useApiKeyStore } from "@/store/apiKeyManager";
+import { UploadButton } from "@/lib/uploadthing";
+import { toast } from "sonner";
 
 interface ChatInputProps {
   chatState: UseChatHelpers & {
@@ -58,6 +60,7 @@ const OPENAI_SVG = (
 export default function ChatInput({ chatState }: ChatInputProps) {
   const [selectedModel, setSelectedModel] = useState("GPT-4-1");
   const [imageGenerating, setImageGenerating] = useState(false);
+  const [imageAnalyzing, setImageAnalyzing] = useState(false);
   const { threadId } = useParams();
   const navigate = useNavigate();
   const { getApiKey } = useApiKeyStore();
@@ -350,129 +353,210 @@ export default function ChatInput({ chatState }: ChatInputProps) {
 
   return (
     <div className="w-full">
-      <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
-        <div className="relative">
-          <div className="relative flex flex-col">
-            <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
-              <Textarea
-                id="ai-input-15"
-                value={input}
-                placeholder={"What can I do for you?"}
-                className={cn(
-                  "w-full rounded-xl rounded-b-none px-4 py-3 bg-black/5 dark:bg-white/5 border-none dark:text-white placeholder:text-black/70 dark:placeholder:text-white/70 resize-none focus-visible:ring-0 focus-visible:ring-offset-0",
-                  "min-h-[72px]"
+  <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
+<div className="relative">
+  <div className="relative flex flex-col">
+    <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
+      <Textarea
+        id="ai-input-15"
+        value={input}
+        placeholder={"What can I do for you?"}
+        className={cn(
+          "w-full rounded-xl rounded-b-none px-4 py-3 bg-black/5 dark:bg-white/5 border-none dark:text-white placeholder:text-black/70 dark:placeholder:text-white/70 resize-none focus-visible:ring-0 focus-visible:ring-offset-0",
+          "min-h-[72px]"
+        )}
+        ref={textareaRef}
+            onKeyDown={handleKeyDown}
+            onChange={(e) => {
+              handleInputChange(e);
+              adjustHeight();
+            }}
+            disabled={isLoading || imageGenerating || imageAnalyzing}
+          />
+        </div>
+
+        <div className="h-14 bg-black/5 dark:bg-white/5 rounded-b-xl flex items-center">
+          <div className="absolute left-3 right-3 bottom-3 flex items-center justify-between w-[calc(100%-24px)]">
+    <div className="flex items-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild disabled={isLoading || imageGenerating || imageAnalyzing}>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-1 h-8 pl-1 pr-2 text-xs rounded-md dark:text-white hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={selectedModel}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                transition={{ duration: 0.15 }}
+                className="flex items-center gap-1"
+              >
+                {MODEL_ICONS[selectedModel] || (
+                  <Bot className="w-4 h-4 opacity-50" />
                 )}
-                ref={textareaRef}
-                onKeyDown={handleKeyDown}
-                onChange={(e) => {
-                  handleInputChange(e);
-                  adjustHeight();
+                {selectedModel}
+                <ChevronDown className="w-3 h-3 opacity-50" />
+              </motion.div>
+            </AnimatePresence>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          className={cn(
+            "min-w-[10rem]",
+            "border-black/10 dark:border-white/10",
+            "bg-gradient-to-b from-white via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-800"
+          )}
+        >
+          {Object.entries(AI_MODELS).map(([provider, models]) => (
+            <div key={provider}>
+              <div className="px-2 py-1.5 text-xs font-medium text-black/50 dark:text-white/50 uppercase">
+                {provider}
+              </div>
+              {models.map((model) => (
+                <DropdownMenuItem
+              key={model}
+              onSelect={() => setSelectedModel(model)}
+              className="flex items-center justify-between gap-2"
+            >
+              <div className="flex items-center gap-2">
+                {MODEL_ICONS[model] || (
+                  <Bot className="w-4 h-4 opacity-50" />
+                )}
+                <span>{model}</span>
+              </div>
+              {selectedModel === model && (
+                <Check className="w-4 h-4 text-blue-500" />
+              )}
+            </DropdownMenuItem>
+          ))}
+        </div>
+      ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <div className="h-4 w-px bg-black/10 dark:bg-white/10 mx-0.5" />
+      <UploadButton
+        endpoint="imageUploader"
+        content={{
+          button({ ready, isUploading }) {
+            return (
+                      <Paperclip className={cn(
+                        "w-4 h-4 text-black/70 dark:text-white/70",
+                        (isUploading || imageAnalyzing) && "animate-spin",
+                        !ready && "opacity-50"
+                      )} />
+                    );
+                  },
+                  allowedContent: () => null
                 }}
-                disabled={isLoading || imageGenerating}
+                appearance={{
+                  container: "!p-0 !m-0",
+                  button: cn(
+                    "!flex !items-center !gap-1 !h-8 !px-2 !text-xs !rounded-md !border-0 !outline-none !ring-0 !shadow-none",
+                    "!bg-black/5 dark:!bg-white/5 hover:!bg-black/10 dark:hover:!bg-white/10",
+                    "focus-visible:!ring-1 focus-visible:!ring-offset-0 focus-visible:!ring-blue-500 !transition-colors !duration-200"
+                  ),
+                  allowedContent: "!hidden"
+                }}
+                onClientUploadComplete={async (res) => {
+                  toast.success("Image uploaded successfully");
+                  if (res && res[0]) {
+                    const uploadedFile = res[0];
+                    setImageAnalyzing(true);
+                    try {
+                      const googleApiKey = getApiKey('google');
+                      if (!googleApiKey) {
+                        alert('Please configure your Google API key in the settings first for image analysis.');
+                        return;
+                      }
+                      let currentThreadId = threadId;
+                      const userMessage = {
+                        id: crypto.randomUUID(),
+                        role: 'user' as const,
+                        content: `Here's the image, analyze it: ${uploadedFile.name}`,
+                        parts: [{ type: 'text' as const, text: `Here's the image, analyze it: ${uploadedFile.name}` }],
+                        createdAt: new Date(),
+                      };
+
+                      await createMessage(currentThreadId!, userMessage);
+                      const response = await fetch('/api/image-understanding', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          fileUrl: uploadedFile.url,
+                          prompt: "Analyze this image and describe what you see in detail. Include any text, objects, people, activities, colors, and overall composition.",
+                          apiKey: googleApiKey,
+                        })
+                      });
+
+                      const result = await response.json();
+
+                      if (result.success && result.analysis) {
+                        const aiMessage = {
+                          id: crypto.randomUUID(),
+                          role: 'assistant' as const,
+                          content: `## Image Analysis\n\n${result.analysis}`,
+                          parts: [{ type: 'text' as const, text: `## Image Analysis\n\n${result.analysis}` }],
+                          createdAt: new Date(),
+                        };
+
+                        await createMessage(currentThreadId!, aiMessage);
+                      } else {
+                        throw new Error(result.error || 'Failed to analyze image');
+                      }
+
+                    } catch (error) {
+                      console.error('Image analysis failed:', error);
+
+                      const errorMessage = {
+                        id: crypto.randomUUID(),
+                        role: 'assistant' as const,
+                        content: `Sorry, I couldn't analyze the uploaded image. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                        parts: [{ type: 'text' as const, text: `Sorry, I couldn't analyze the uploaded image. Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+                        createdAt: new Date(),
+                      };
+
+                      if (threadId) {
+                        await createMessage(threadId, errorMessage);
+                      }
+                    } finally {
+                      setImageAnalyzing(false);
+                    }
+                  }
+                }}
+                onUploadError={(error: Error) => {
+                  toast.error("Upload failed: " + error.message);
+                }}
               />
             </div>
-
-            <div className="h-14 bg-black/5 dark:bg-white/5 rounded-b-xl flex items-center">
-              <div className="absolute left-3 right-3 bottom-3 flex items-center justify-between w-[calc(100%-24px)]">
-                <div className="flex items-center gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild disabled={isLoading || imageGenerating}>
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-1 h-8 pl-1 pr-2 text-xs rounded-md dark:text-white hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500"
-                      >
-                        <AnimatePresence mode="wait">
-                          <motion.div
-                            key={selectedModel}
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            transition={{ duration: 0.15 }}
-                            className="flex items-center gap-1"
-                          >
-                            {MODEL_ICONS[selectedModel] || (
-                              <Bot className="w-4 h-4 opacity-50" />
-                            )}
-                            {selectedModel}
-                            <ChevronDown className="w-3 h-3 opacity-50" />
-                          </motion.div>
-                        </AnimatePresence>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      className={cn(
-                        "min-w-[10rem]",
-                        "border-black/10 dark:border-white/10",
-                        "bg-gradient-to-b from-white via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-800"
-                      )}
-                    >
-                      {Object.entries(AI_MODELS).map(([provider, models]) => (
-                        <div key={provider}>
-                          <div className="px-2 py-1.5 text-xs font-medium text-black/50 dark:text-white/50 uppercase">
-                            {provider}
-                          </div>
-                          {models.map((model) => (
-                            <DropdownMenuItem
-                              key={model}
-                              onSelect={() => setSelectedModel(model)}
-                              className="flex items-center justify-between gap-2"
-                            >
-                              <div className="flex items-center gap-2">
-                                {MODEL_ICONS[model] || (
-                                  <Bot className="w-4 h-4 opacity-50" />
-                                )}
-                                <span>{model}</span>
-                              </div>
-                              {selectedModel === model && (
-                                <Check className="w-4 h-4 text-blue-500" />
-                              )}
-                            </DropdownMenuItem>
-                          ))}
-                        </div>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <div className="h-4 w-px bg-black/10 dark:bg-white/10 mx-0.5" />
-                  <label
-                    className={cn(
-                      "rounded-lg p-2 bg-black/5 dark:bg-white/5 cursor-pointer",
-                      "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
-                      "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white",
-                      isLoading && "opacity-50 cursor-not-allowed"
-                    )}
-                    aria-label="Attach file"
-                  >
-                    <input type="file" className="hidden" disabled={isLoading || imageGenerating} />
-                    <Paperclip className="w-4 h-4 transition-colors" />
-                  </label>
-                </div>
-                <button
-                  type="button"
+            <button
+              type="button"
+              className={cn(
+                "rounded-lg p-2 bg-black/5 dark:bg-white/5",
+                "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
+                isLoading && "opacity-50 cursor-not-allowed"
+              )}
+              aria-label="Send message"
+              disabled={!input.trim() || isLoading || imageGenerating || imageAnalyzing}
+              onClick={handleMessageSubmit}
+            >
+              {isLoading || imageGenerating || imageAnalyzing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ArrowRight
                   className={cn(
-                    "rounded-lg p-2 bg-black/5 dark:bg-white/5",
-                    "hover:bg-black/10 dark:hover:bg-white/10 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-blue-500",
-                    isLoading && "opacity-50 cursor-not-allowed"
+                    "w-4 h-4 dark:text-white transition-opacity duration-200",
+                    input.trim() ? "opacity-100" : "opacity-30"
                   )}
-                  aria-label="Send message"
-                  disabled={!input.trim() || isLoading || imageGenerating}
-                  onClick={handleMessageSubmit}
-                >
-                  {isLoading || imageGenerating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <ArrowRight
-                      className={cn(
-                        "w-4 h-4 dark:text-white transition-opacity duration-200",
-                        input.trim() ? "opacity-100" : "opacity-30"
-                      )}
-                    />
-                  )}
-                </button>
-              </div>
-            </div>
+                />
+              )}
+            </button>
           </div>
         </div>
       </div>
+    </div>
+  </div>
     </div>
   );
 }
