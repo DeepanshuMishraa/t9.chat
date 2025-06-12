@@ -2,7 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { createGroq } from "@ai-sdk/groq"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { streamText } from "ai"
-import { GoogleGenAI, Modality } from "@google/genai";
+import { createPartFromUri, createUserContent, GoogleGenAI, Modality } from "@google/genai";
 
 export const maxDuration = 10000;
 
@@ -74,6 +74,27 @@ const generateImages = async (prompt: string, apiKey: string) => {
   }
 
   throw new Error("No image data found in response");
+}
+
+
+const imageUnderstanding = async (file: File, apiKey: string, prompt: string) => {
+  const ai = new GoogleGenAI({ apiKey });
+  const fileInput = await ai.files.upload({
+    file: file,
+    config: {
+      mimeType: "image/png"
+    },
+  })
+
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: createUserContent([
+      createPartFromUri(fileInput.uri as string, fileInput.mimeType as string),
+      prompt,
+    ]),
+  });
+  return response.text;
 }
 
 export async function POST(req: Request) {
