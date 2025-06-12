@@ -1,9 +1,10 @@
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { CodeBlock } from './code';
 
 function ImageWithSkeleton({ src, alt }: { src: string; alt: string }) {
   const [loading, setLoading] = useState(true);
@@ -98,26 +99,7 @@ export default function MarkdownRenderer({ content }: { content: string }) {
                 const srcString = typeof src === 'string' ? src : '';
                 return <ImageWithSkeleton src={srcString} alt={alt || 'Generated image'} />;
               },
-              code({ className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const isInline = !match;
-                return isInline ? (
-                  <code {...props} className="rounded px-1 py-0.5 bg-muted-foreground/20">
-                    {children}
-                  </code>
-                ) : (
-                  <div className="rounded-md overflow-hidden">
-                    <SyntaxHighlighter
-                      style={oneDark}
-                      language={match[1]}
-                      PreTag="div"
-                      className="!my-0"
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  </div>
-                );
-              },
+              code: CodeBlock as any,
               p({ children }) {
                 return <p className="mb-4 last:mb-0">{children}</p>
               },
