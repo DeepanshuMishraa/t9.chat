@@ -4,6 +4,7 @@ import Layout, { ChatLayout } from "./routes/Layout";
 import Chat from "./routes/Chat";
 import BYOK from "@/frontend/components/ApiKeyWindow";
 import { useApiKeyStore, PROVIDERS } from "@/store/apiKeyManager";
+import { SharedChat } from "./components/SharedChat";
 
 export default function App() {
   const { hasApiKey } = useApiKeyStore();
@@ -30,6 +31,12 @@ export default function App() {
             hasAnyApiKey ? (<ChatLayout>
               <Chat />
             </ChatLayout>) : (<BYOK />)
+          }
+        />
+        <Route
+          path="/shared/:threadId"
+          element={
+            <SharedChat />
           }
         />
       </Routes>
