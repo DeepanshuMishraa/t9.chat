@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router"
 import { getMessages } from "../dexie/query";
-import MarkdownRenderer from "./Markdown";
+import MarkdownRenderer from "../components/Markdown";
 import { Loader2, MessageCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "./ui/button";
+import { Button } from "../components/ui/button";
 
 export const SharedChat = () => {
   const { threadId } = useParams();

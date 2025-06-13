@@ -67,77 +67,7 @@ export default function NavMain() {
               threads={data || []}
             />
           </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/library"}
-            >
-              <a href="/library">
-                <Library className="stroke-[1.5px]" />
-                <span>Library</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         </SidebarMenu>
-      </SidebarGroup>
-      <SidebarGroup>
-        <SidebarGroupLabel>AI Models</SidebarGroupLabel>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/chat/sora"}
-            >
-              <a href="/chat/sora">
-                <Play className="stroke-[1.5px]" />
-                <span>Sora</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/chat/gpts"}
-            >
-              <a href="/chat/gpts">
-                <Grid2x2 className="stroke-[1.5px]" />
-                <span>GPTs</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroup>
-      <SidebarGroup>
-        <SidebarGroupLabel>Tools</SidebarGroupLabel>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/tools/youtube"}
-            >
-              <a href="/tools/youtube">
-                <Youtube className="stroke-[1.5px]" />
-                <span>YouTube Summarizer</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/tools/pdf"}
-            >
-              <a href="/tools/pdf">
-                <FileText className="stroke-[1.5px]" />
-                <span>PDF Summarizer</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroup>
-      <SidebarGroup>
         <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
         <SidebarMenu>
           {data?.length === 0 ? <div className="text-center p-4">No chats found</div> : data?.map((thread) => (

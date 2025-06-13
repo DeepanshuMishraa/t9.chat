@@ -4,7 +4,8 @@ import Layout, { ChatLayout } from "./routes/Layout";
 import Chat from "./routes/Chat";
 import BYOK from "@/frontend/components/ApiKeyWindow";
 import { useApiKeyStore, PROVIDERS } from "@/store/apiKeyManager";
-import { SharedChat } from "./components/SharedChat";
+import { SharedChat } from "./routes/SharedChat";
+import NotFound from "./routes/NotFound";
 
 export default function App() {
   const { hasApiKey } = useApiKeyStore();
@@ -39,6 +40,7 @@ export default function App() {
             <SharedChat />
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
