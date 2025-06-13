@@ -22,6 +22,7 @@ import {
 import { getThreads } from "../dexie/query"
 import { useQuery } from "@tanstack/react-query"
 import { getChatSummary } from "@/lib/ai"
+import { SearchChat } from "./SearchChats"
 
 export default function NavMain() {
   const location = useLocation()
@@ -62,15 +63,9 @@ export default function NavMain() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              data-active={location.pathname === "/search"}
-            >
-              <a href="/search">
-                <Search className="stroke-[1.5px]" />
-                <span>Search chats</span>
-              </a>
-            </SidebarMenuButton>
+            <SearchChat
+              threads={data || []}
+            />
           </SidebarMenuItem>
 
           <SidebarMenuItem>
