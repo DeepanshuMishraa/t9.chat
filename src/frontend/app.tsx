@@ -6,6 +6,7 @@ import BYOK from "@/frontend/components/ApiKeyWindow";
 import { useApiKeyStore, PROVIDERS } from "@/store/apiKeyManager";
 import { SharedChat } from "./routes/SharedChat";
 import NotFound from "./routes/NotFound";
+import Settings from "./routes/Settings";
 
 export default function App() {
   const { hasApiKey } = useApiKeyStore();
@@ -41,6 +42,7 @@ export default function App() {
           }
         />
         <Route path="*" element={<NotFound />} />
+        <Route path="/settings" element={<Settings />} /> 
       </Routes>
     </BrowserRouter>
   );
