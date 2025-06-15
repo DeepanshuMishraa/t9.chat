@@ -4,7 +4,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { streamText } from "ai"
 import { createPartFromUri, createUserContent, GoogleGenAI, Modality } from "@google/genai";
 
-export const maxDuration = 10000;
+export const maxDuration = 60;
 
 const getOpenAIResponse = async (messages: any[], modelName: string, apiKey: string) => {
   const openai = createOpenAI({ apiKey });
