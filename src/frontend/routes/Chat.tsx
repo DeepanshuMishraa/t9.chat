@@ -1,7 +1,7 @@
 import ChatInput from "@/frontend/components/ChatInput";
 import Messages from "../components/Messages";
 import { useParams } from "react-router";
-import { useSidebar } from "../components/ui/sidebar";
+import { useSidebar, SidebarTrigger } from "../components/ui/sidebar";
 import { useChat } from "@ai-sdk/react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { idb } from "@/frontend/dexie/db";
@@ -117,6 +117,10 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen relative">
+      <div className="md:hidden fixed top-4 left-4 z-50">
+        <SidebarTrigger />
+      </div>
+
       <div className="flex-1 overflow-y-auto pb-24">
         {threadId ? (
           <Messages
@@ -131,7 +135,7 @@ export default function Chat() {
           </div>
         )}
       </div>
-      <div className={`bottom-0 right-0 bg-background z-50 border-t transition-all duration-200 ${sidebar.open ? "left-64" : "left-0"}`}>
+      <div className="fixed bottom-0 left-0 right-0 bg-background z-50 border-t md:left-[256px] md:peer-data-[state=collapsed]:left-[52px] transition-all duration-200">
         <div className="max-w-3xl mx-auto px-4 py-4">
           <ChatInput chatState={chatState} />
         </div>
