@@ -4,7 +4,7 @@ export const siteConfig: SiteConfig = {
   name: "t9.chat",
   title: "t9.chat",
   description: "t9.chat is a blazing fast llm chat client",
-  origin: "https://t9.chat",
+  origin: "https://t9.deepanshumishra.xyz",
   keywords: [
     "llm",
     "chat",

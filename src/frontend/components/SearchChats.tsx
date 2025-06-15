@@ -2,25 +2,49 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { MessageCircle, Search } from "lucide-react";
 import { useState } from "react"
 import { useNavigate } from "react-router";
+import { useSidebar, SidebarMenuButton } from "./ui/sidebar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export const SearchChat = ({ threads }: { threads: any[] }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
 
   const handleSelect = (threadId: string) => {
     setOpen(false);
     navigate(`/chat/${threadId}`);
   };
 
+  const handleOpenSearch = () => {
+    setOpen(true);
+  };
+
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
-      >
-        <Search className="w-4 h-4" />
-        <span>Search chats</span>
-      </button>
+      {collapsed ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SidebarMenuButton
+              onClick={handleOpenSearch}
+              className="w-full cursor-pointer"
+            >
+              <Search className="stroke-[1.5px]" />
+            </SidebarMenuButton>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            Search chats
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <SidebarMenuButton
+          onClick={handleOpenSearch}
+          className="w-full cursor-pointer"
+        >
+          <Search className="stroke-[1.5px]" />
+          <span>Search chats</span>
+        </SidebarMenuButton>
+      )}
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Search chats..." />

@@ -46,7 +46,6 @@ export default function NavMain() {
     <>
       <div className="flex mt-6 px-4 items-center justify-between">
         <h1 className="text-xl font-bold">t9</h1>
-        <SidebarTrigger className="w-10 h-10" />
       </div>
       <SidebarGroup>
         <SidebarMenu>

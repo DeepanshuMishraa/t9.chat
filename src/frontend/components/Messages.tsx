@@ -49,7 +49,7 @@ export default function Messages({ threadId, streamingMessages = [], storedMessa
   );
 
   return (
-    <div className="flex flex-col gap-4 px-4">
+    <div className="flex flex-col gap-4 px-4 mt-20">
       <ChatBar threadId={threadId} />
       {allMessages.length === 0 ? (
         <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -68,7 +68,7 @@ export default function Messages({ threadId, streamingMessages = [], storedMessa
               <div
                 className={cn(
                   'px-4 py-3 rounded-xl',
-                  'max-w-[85%] md:max-w-[75%] lg:max-w-[65%]',
+                  'max-w-[85%]  md:max-w-[75%] lg:max-w-[65%]',
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted prose dark:prose-invert prose-sm sm:prose-base max-w-none'

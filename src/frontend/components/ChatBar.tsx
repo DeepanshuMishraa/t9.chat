@@ -25,7 +25,7 @@ export const ChatBar = ({ threadId }: { threadId: string }) => {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-4 right-4 z-50 mb-20">
       <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg p-2">
         <div className="flex items-center gap-2">
           <ThemeToggler />

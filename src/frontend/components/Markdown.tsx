@@ -99,7 +99,7 @@ export default function MarkdownRenderer({ content }: { content: string }) {
               },
               code: CodeBlock as any,
               p({ children }) {
-                return <p className="mb-4 last:mb-0">{children}</p>
+                  return <p className="mb-4 last:mb-0">{children}</p>
               },
               ul({ children }) {
                 return <ul className="list-disc pl-4 mb-4 last:mb-0">{children}</ul>
@@ -108,13 +108,13 @@ export default function MarkdownRenderer({ content }: { content: string }) {
                 return <ol className="list-decimal pl-4 mb-4 last:mb-0">{children}</ol>
               },
               li({ children }) {
-                return <li className="mb-1">{children}</li>
+                return <li className="mb-1 last:mb-0">{children}</li>
               },
               blockquote({ children }) {
-                return <blockquote className="border-l-4 border-primary/50 pl-4 italic">{children}</blockquote>
+                return <blockquote className="border-l-4 border-primary/50 pl-4 italic ">{children}</blockquote>
               },
               a({ children, href }) {
-                return <a href={href} className="text-primary underline hover:no-underline" target="_blank" rel="noopener noreferrer">{children}</a>
+                return <a href={href} className="text-primary underline hover:no-underline " target="_blank" rel="noopener noreferrer">{children}</a>
               },
               table({ children }) {
                 return (
