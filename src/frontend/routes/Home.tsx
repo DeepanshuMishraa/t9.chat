@@ -3,11 +3,12 @@ import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { RiGoogleFill, RiRobot2Fill } from "@remixicon/react";
 import { useEffect } from "react";
+import Image from "next/image";
 
 export default function Home() {
   const navigate = useNavigate();
   const { data: session } = useSession();
-  
+
   useEffect(() => {
     if (session?.user) {
       navigate("/chat");
@@ -39,7 +40,7 @@ export default function Home() {
         <div className="flex flex-col items-center text-center space-y-8">
           <div className="relative">
             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-primary to-primary/50 blur-2xl opacity-25" />
-            <RiRobot2Fill className="relative w-24 h-24 text-primary" />
+            <Image src="/t9.png" alt="t9.chat" width={100} height={100} />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/50">
             t9.chat

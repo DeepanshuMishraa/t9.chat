@@ -352,7 +352,7 @@ export default function ChatInput({ chatState }: ChatInputProps) {
   };
 
   return (
-    <div className="w-full">
+  <div className="w-full ">
   <div className="bg-black/5 dark:bg-white/5 rounded-2xl p-1.5">
 <div className="relative">
   <div className="relative flex flex-col">

@@ -49,7 +49,7 @@ export default function Messages({ threadId, streamingMessages = [], storedMessa
   );
 
   return (
-    <div className="flex flex-col gap-4 px-4 mt-20">
+    <div className="flex flex-col gap-4 px-4 mt-20 pb-20">
       <ChatBar threadId={threadId} />
       {allMessages.length === 0 ? (
         <div className="flex items-center justify-center h-full text-muted-foreground">
