@@ -56,7 +56,7 @@ export default function Messages({ threadId, streamingMessages = [], storedMessa
           Start a new conversation
         </div>
       ) : (
-        allMessages.map((message, index) => { 
+        allMessages.map((message, index) => {
           return (
             <div
               key={message.id}

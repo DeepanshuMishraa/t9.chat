@@ -13,14 +13,18 @@ export default function Chat() {
   const sidebar = useSidebar();
   const { threadId } = useParams();
   const { getApiKey } = useApiKeyStore();
-  const [initialMessagesLoaded, setInitialMessagesLoaded] = useState(false);
   const [initialMessages, setInitialMessages] = useState<any[]>([]);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(false);
   const savedMessageIds = useRef(new Set<string>());
+  const previousThreadId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
+    if (previousThreadId.current === threadId) return;
+    previousThreadId.current = threadId;
+
     if (!threadId) {
       setInitialMessages([]);
-      setInitialMessagesLoaded(true);
+      setIsLoadingInitial(false);
       savedMessageIds.current.clear();
       return;
     }
@@ -31,23 +35,26 @@ export default function Chat() {
           .where('threadId')
           .equals(threadId)
           .sortBy('createdAt');
+
         messages.forEach(msg => savedMessageIds.current.add(msg.id));
 
-        setInitialMessages(messages.map(msg => ({
+        const formattedMessages = messages.map(msg => ({
           id: msg.id,
           content: msg.content,
           role: msg.role,
           createdAt: msg.createdAt
-        })));
-        setInitialMessagesLoaded(true);
+        }));
+
+        setInitialMessages(formattedMessages);
       } catch (error) {
         console.error('Error loading initial messages:', error);
         setInitialMessages([]);
-        setInitialMessagesLoaded(true);
+      } finally {
+        setIsLoadingInitial(false);
       }
     };
 
-    setInitialMessagesLoaded(false);
+    setIsLoadingInitial(true);
     savedMessageIds.current.clear();
     loadInitialMessages();
   }, [threadId]);
@@ -67,7 +74,7 @@ export default function Chat() {
   const chatState = useChat({
     api: "/api/chat",
     id: threadId || "new-chat",
-    initialMessages: initialMessagesLoaded ? initialMessages : [],
+    initialMessages: initialMessages,
     body: {
       model: "GPT-4-1",
       provider: "openai",

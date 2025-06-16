@@ -40,7 +40,7 @@ export default function Home() {
         <div className="flex flex-col items-center text-center space-y-8">
           <div className="relative">
             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-primary to-primary/50 blur-2xl opacity-25" />
-            <Image src="/t9.png" alt="t9.chat" width={100} height={100} />
+            <Image src="/t9.png" alt="t9.chat" width={100} height={100} className="rounded-3xl" />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/50">
             t9.chat
