@@ -9,7 +9,7 @@ export function ThemeToggler() {
 	return (
 		<Button
 			variant="outline"
-			className="rounded-full cursor-pointer"
+			className="rounded-full cursor-pointer hover:bg-gray-300"
 			size="icon"
 			onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
 		>
