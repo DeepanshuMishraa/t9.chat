@@ -65,7 +65,7 @@ export default function Home() {
 							width={100}
 							height={100}
 							className="rounded-3xl"
-						
+						/>
 					</div>
 					<h1 className={`${font.className} text-4xl md:text-6xl font-bold text-gray-300`}>
 						t9.chat
