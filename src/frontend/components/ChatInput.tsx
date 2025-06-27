@@ -268,11 +268,6 @@ export default function ChatInput({ chatState }: ChatInputProps) {
 
 		try {
 			let currentThreadId = threadId;
-			if (!threadId) {
-				currentThreadId = crypto.randomUUID();
-				await createThread(currentThreadId);
-				navigate(`/chat/${currentThreadId}`);
-			}
 
 			const userMessage = {
 				id: crypto.randomUUID(),
@@ -290,6 +285,12 @@ export default function ChatInput({ chatState }: ChatInputProps) {
 				messageContent.toLowerCase().includes("draw");
 
 			setInput("");
+
+			if (!threadId) {
+				currentThreadId = crypto.randomUUID();
+				navigate(`/chat/${currentThreadId}`);
+				createThread(currentThreadId).catch(console.error);
+			}
 
 			if (isImageRequest) {
 				// Handle image generation separately without streaming

@@ -9,7 +9,7 @@
 		"lint": "next lint",
 		"db:push": "npx drizzle-kit push",
 		"db:studio": "npx drizzle-kit studio",
-		"db:generate": "npx drizzle-kit generate",
+		"db:generate": "npx drizzle-kit generate"
 	},
 	"dependencies": {
 		"@ai-sdk/google": "^1.2.19",

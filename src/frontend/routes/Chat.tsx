@@ -31,6 +31,12 @@ export default function Chat() {
 
 		const loadInitialMessages = async () => {
 			try {
+				const threadExists = await idb.threads.get(threadId);
+				if (!threadExists) {
+					setInitialMessages([]);
+					return;
+				}
+
 				const messages = await idb.messages
 					.where("threadId")
 					.equals(threadId)
@@ -81,9 +87,11 @@ export default function Chat() {
 			apiKey: getApiKey("openai"),
 		},
 		onFinish: async (message) => {
-			if (!threadId) return;
+			// Use the current threadId from the state, which might have been updated
+			const currentThreadId = threadId || previousThreadId.current;
+			if (!currentThreadId) return;
 
-			await createMessage(threadId, {
+			await createMessage(currentThreadId, {
 				id: message.id,
 				role: "assistant",
 				content: message.content,
@@ -146,9 +154,8 @@ export default function Chat() {
 				)}
 			</div>
 			<div
-				className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 border-t transition-all duration-200 ${
-					sidebar?.open ? "md:left-[256px]" : "md:left-[52px]"
-				}`}
+				className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 border-t transition-all duration-200 ${sidebar?.open ? "md:left-[256px]" : "md:left-[52px]"
+					}`}
 			>
 				<div className="max-w-3xl mx-auto  px-4 py-4">
 					<ChatInput chatState={chatState} />
