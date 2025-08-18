@@ -5,7 +5,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateText } from "ai";
 
 const getApiKey = (provider: Provider): string => {
-	const key = useApiKeyStore.getState().getApiKey(provider);
+	const key = useApiKeyStore.getState().getKey(provider);
 	return key || "";
 };
 export const google = createGoogleGenerativeAI({

@@ -9,8 +9,8 @@ import Settings from "./routes/Settings";
 import { SharedChat } from "./routes/SharedChat";
 
 export default function App() {
-	const { hasApiKey } = useApiKeyStore();
-	const hasAnyApiKey = PROVIDERS.some((provider) => hasApiKey(provider));
+	const { getKey } = useApiKeyStore();
+	const hasAnyApiKey = PROVIDERS.some((provider) => !!getKey(provider));
 	return (
 		<BrowserRouter>
 			<Routes>

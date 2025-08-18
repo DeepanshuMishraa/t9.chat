@@ -1,164 +1,293 @@
-import ChatInput from "@/frontend/components/ChatInput";
-import { idb } from "@/frontend/dexie/db";
-import { createMessage } from "@/frontend/dexie/query";
-import { useApiKeyStore } from "@/store/apiKeyManager";
+'use client';
+
+import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
+import { Message, MessageAvatar, MessageContent } from "@/components/ai-elements/message";
+import { PromptInput, PromptInputTextarea, PromptInputToolbar, PromptInputTools, PromptInputSubmit, PromptInputModelSelect, PromptInputModelSelectTrigger, PromptInputModelSelectContent, PromptInputModelSelectItem, PromptInputModelSelectValue, PromptInputButton } from "@/components/ai-elements/prompt-input";
+import { Response } from "@/components/ai-elements/response";
+import { Loader } from "@/components/ai-elements/loader";
 import { useChat } from "@ai-sdk/react";
+import { useState, useMemo, useEffect } from "react";
+import { useParams, useNavigate } from "react-router";
+import { SidebarTrigger } from "../components/ui/sidebar";
+import { idb } from "@/frontend/dexie/db";
+import { createMessage, createThread } from "@/frontend/dexie/query";
+import { useApiKeyStore } from "@/store/apiKeyManager";
+import { AI_MODELS, getModelConfig, AIModel } from "@/lib/models";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
-import Messages from "../components/Messages";
-import { SidebarTrigger, useSidebar } from "../components/ui/sidebar";
+import { Paperclip } from "lucide-react";
+import { toast } from "sonner";
+import { ChatBar } from "../components/ChatBar";
+import { useSession } from "@/lib/auth-client";
+
 
 export default function Chat() {
-	const sidebar = useSidebar();
 	const { threadId } = useParams();
-	const { getApiKey } = useApiKeyStore();
-	const [initialMessages, setInitialMessages] = useState<any[]>([]);
-	const [isLoadingInitial, setIsLoadingInitial] = useState(false);
-	const savedMessageIds = useRef(new Set<string>());
-	const previousThreadId = useRef<string | undefined>(undefined);
+	const navigate = useNavigate();
+	const { getKey } = useApiKeyStore();
+	const [input, setInput] = useState("");
+	const [model, setModel] = useState<AIModel>(AI_MODELS[0]);
+	const session = useSession();
 
-	useEffect(() => {
-		if (previousThreadId.current === threadId) return;
-		previousThreadId.current = threadId;
-
-		if (!threadId) {
-			setInitialMessages([]);
-			setIsLoadingInitial(false);
-			savedMessageIds.current.clear();
-			return;
-		}
-
-		const loadInitialMessages = async () => {
-			try {
-				const threadExists = await idb.threads.get(threadId);
-				if (!threadExists) {
-					setInitialMessages([]);
-					return;
-				}
-
-				const messages = await idb.messages
-					.where("threadId")
-					.equals(threadId)
-					.sortBy("createdAt");
-
-				messages.forEach((msg) => savedMessageIds.current.add(msg.id));
-
-				const formattedMessages = messages.map((msg) => ({
-					id: msg.id,
-					content: msg.content,
-					role: msg.role,
-					createdAt: msg.createdAt,
-				}));
-
-				setInitialMessages(formattedMessages);
-			} catch (error) {
-				console.error("Error loading initial messages:", error);
-				setInitialMessages([]);
-			} finally {
-				setIsLoadingInitial(false);
-			}
-		};
-
-		setIsLoadingInitial(true);
-		savedMessageIds.current.clear();
-		loadInitialMessages();
-	}, [threadId]);
-
+	// Load stored messages from Dexie and convert to UIMessage format
 	const storedMessages = useLiveQuery(
 		async () => {
-			if (!threadId) return [];
-			return await idb.messages
+			if (!threadId) return undefined;
+			const messages = await idb.messages
 				.where("threadId")
 				.equals(threadId)
 				.sortBy("createdAt");
+			
+			console.log('Loaded stored messages:', messages); // Debug log
+			
+			return messages.map(msg => ({
+				id: msg.id,
+				role: msg.role as 'user' | 'assistant',
+				parts: msg.parts && msg.parts.length > 0
+					? msg.parts
+					: [{ type: 'text' as const, text: msg.content || '' }],
+			})) as any[];
 		},
 		[threadId],
-		[],
+		undefined
 	);
 
-	const chatState = useChat({
-		api: "/api/chat",
-		id: threadId || "new-chat",
-		initialMessages: initialMessages,
-		body: {
-			model: "GPT-4-1",
-			provider: "openai",
-			apiKey: getApiKey("openai"),
-		},
-		onFinish: async (message) => {
-			// Use the current threadId from the state, which might have been updated
-			const currentThreadId = threadId || previousThreadId.current;
-			if (!currentThreadId) return;
-
-			await createMessage(currentThreadId, {
-				id: message.id,
-				role: "assistant",
-				content: message.content,
-				parts: [{ type: "text", text: message.content }],
-				createdAt: message.createdAt || new Date(),
-			});
-			savedMessageIds.current.add(message.id);
-		},
-		onError: (error) => {
-			console.error("Error in chat:", error);
+	// Use the correct useChat hook pattern
+	const { messages, sendMessage, status, setMessages } = useChat({
+		onFinish: async (message: any) => {
+			if (threadId && message.role === 'assistant') {
+				console.log('Saving AI message:', message); // Debug log
+				
+				// Only save the AI response - user messages are handled by useChat properly
+				await createMessage(threadId, {
+					id: message.id,
+					role: "assistant",
+					content: message.parts?.[0]?.type === 'text' ? message.parts[0].text : '',
+					parts: message.parts || [],
+					createdAt: new Date(),
+				});
+			}
 		},
 	});
 
+	// Save user messages when they appear in the messages array
 	useEffect(() => {
-		if (!threadId || !chatState.messages) return;
+		if (!threadId || !messages.length) return;
 
-		const saveUserMessages = async () => {
-			for (const message of chatState.messages) {
-				if (
-					message.role === "user" &&
-					!savedMessageIds.current.has(message.id)
-				) {
-					try {
-						await createMessage(threadId, {
-							id: message.id,
-							role: "user",
-							content: message.content,
-							parts: [{ type: "text", text: message.content }],
-							createdAt: message.createdAt || new Date(),
-						});
-						savedMessageIds.current.add(message.id);
-					} catch (error) {
-						console.error("Error saving user message:", error);
-					}
+		const saveNewUserMessages = async () => {
+			const userMessages = messages.filter(msg => msg.role === 'user');
+			for (const message of userMessages) {
+				const existing = await idb.messages.where('id').equals(message.id).first();
+				if (!existing) {
+					await createMessage(threadId, {
+						id: message.id,
+						role: "user",
+						content: message.parts?.[0]?.type === 'text' ? message.parts[0].text : '',
+						parts: message.parts || [],
+						createdAt: new Date(),
+					});
 				}
 			}
 		};
 
-		saveUserMessages();
-	}, [chatState.messages, threadId]);
+		saveNewUserMessages();
+	}, [messages, threadId]);
+
+	// Initialize messages ONLY when threadId changes (not when storedMessages updates)
+	const [lastThreadId, setLastThreadId] = useState<string | undefined>();
+	
+	useEffect(() => {
+		if (threadId !== lastThreadId) {
+			console.log('Thread changed, loading stored messages for:', threadId);
+			setLastThreadId(threadId);
+			
+			if (threadId && storedMessages) {
+				console.log('Setting stored messages:', storedMessages);
+				setMessages(storedMessages);
+			} else if (!threadId) {
+				setMessages([]);
+			}
+		}
+	}, [threadId, lastThreadId, storedMessages, setMessages]);
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!input.trim()) return;
+
+		const modelConfig = getModelConfig(model);
+		const apiKey = getKey(modelConfig.provider);
+		if (!apiKey) {
+			toast.error(`Please add your ${modelConfig.provider} API key in settings`);
+			return;
+		}
+
+		let currentThreadId = threadId;
+
+		// Create new thread if needed
+		if (!threadId) {
+			const newThread = await createThread(input);
+			currentThreadId = newThread.id;
+			navigate(`/chat/${newThread.id}`);
+		}
+
+		// User message will be handled by useChat hook
+
+		// Send message using the correct pattern with headers
+		sendMessage(
+			{ text: input },
+			{
+				headers: {
+					[modelConfig.headerKey]: apiKey,
+				},
+				body: {
+					model: model,
+				},
+			}
+		);
+
+		setInput("");
+	};
+
+	const handleFileUpload = async (res: any) => {
+		if (!res || !res[0]) return;
+
+		const imageUrl = res[0].url;
+		const modelConfig = getModelConfig(model);
+		const apiKey = getKey(modelConfig.provider);
+		if (!apiKey) {
+			toast.error(`Please add your ${modelConfig.provider} API key in settings`);
+			return;
+		}
+
+		try {
+			const response = await fetch("/api/image-understanding", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					model: modelConfig.provider === "openai" ? "GPT-4o" : model,
+					messages: [{
+						role: "user",
+						content: [
+							{ type: "text", text: "What's in this image?" },
+							{ type: "image", image: imageUrl }
+						],
+					}],
+					provider: modelConfig.provider,
+					apiKey,
+				}),
+			});
+
+			if (!response.ok) throw new Error("Failed to analyze image");
+
+			const data = await response.json();
+			toast.success("Image analyzed successfully!");
+			setInput(data.content || "");
+		} catch (error) {
+			console.error("Error analyzing image:", error);
+			toast.error("Failed to analyze image");
+		}
+	};
+
 
 	return (
-		<div className="flex flex-col h-screen relative">
+		<div className="flex flex-col h-screen">
 			<div className="md:hidden fixed top-4 left-4 z-50">
 				<SidebarTrigger />
 			</div>
 
-			<div className="flex-1 overflow-y-auto pb-32 md:pb-24">
-				{threadId ? (
-					<Messages
-						threadId={threadId}
-						streamingMessages={chatState.messages}
-						storedMessages={storedMessages}
-						isLoading={chatState.isLoading}
-					/>
-				) : (
-					<div className="flex items-center justify-center h-full text-muted-foreground">
-						Start a new conversation
+			<Conversation className="flex-1">
+				<ConversationContent>
+					<div className="max-w-3xl mx-auto">
+						{threadId && <ChatBar threadId={threadId} />}
+
+						{messages.length === 0 && !threadId ? (
+							<div className="flex items-center justify-center h-full text-muted-foreground">
+								Start a new conversation
+							</div>
+						) : (
+							<div className="space-y-4">
+								{messages.map((message: any) => (
+									<Message key={message.id} from={message.role}>
+										<MessageAvatar
+											src={message.role === "user" ? (session.data?.user?.image || "") : ""}
+											name={message.role === "user" ? "You" : "AI"}
+										/>
+										<MessageContent>
+											{message.parts ? (
+												// Handle UI message format with parts array
+												message.parts.map((part: any, i: number) => {
+													switch (part.type) {
+														case 'text':
+															return message.role === "assistant" ? (
+																<Response key={`${message.id}-${i}`}>{part.text}</Response>
+															) : (
+																<div key={`${message.id}-${i}`}>{part.text}</div>
+															);
+														default:
+															return null;
+													}
+												})
+											) : (
+												// Handle legacy message format with content
+												message.role === "assistant" ? (
+													<Response>{message.content}</Response>
+												) : (
+													<div>{message.content}</div>
+												)
+											)}
+										</MessageContent>
+									</Message>
+								))}
+								{status === "streaming" && (
+									<Message from="assistant">
+										<MessageAvatar src="" name="AI" />
+										<MessageContent>
+											<Loader />
+										</MessageContent>
+									</Message>
+								)}
+							</div>
+						)}
 					</div>
-				)}
-			</div>
-			<div
-				className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 border-t transition-all duration-200 ${sidebar?.open ? "md:left-[256px]" : "md:left-[52px]"
-					}`}
-			>
-				<div className="max-w-3xl mx-auto  px-4 py-4">
-					<ChatInput chatState={chatState} />
+				</ConversationContent>
+				<ConversationScrollButton />
+			</Conversation>
+
+			<div className="border-t bg-background">
+				<div className="max-w-3xl mx-auto p-4">
+					<PromptInput onSubmit={handleSubmit}>
+						<PromptInputTextarea
+							value={input}
+							onChange={(e) => setInput(e.target.value)}
+							placeholder="What would you like to know?"
+							disabled={status === "streaming"}
+						/>
+						<PromptInputToolbar>
+							<PromptInputTools>
+								<PromptInputButton>
+									<Paperclip className="h-4 w-4" />
+								</PromptInputButton>
+
+								<PromptInputModelSelect value={model} onValueChange={(value) => setModel(value as AIModel)}>
+									<PromptInputModelSelectTrigger>
+										<PromptInputModelSelectValue />
+									</PromptInputModelSelectTrigger>
+									<PromptInputModelSelectContent>
+										<div className="space-y-2">
+											<div>
+												{AI_MODELS.map((modelName) => (
+													<PromptInputModelSelectItem key={modelName} value={modelName}>
+														{modelName}
+													</PromptInputModelSelectItem>
+												))}
+											</div>
+										</div>
+									</PromptInputModelSelectContent>
+								</PromptInputModelSelect>
+							</PromptInputTools>
+
+							<PromptInputSubmit disabled={!input.trim()} status={status} />
+						</PromptInputToolbar>
+					</PromptInput>
 				</div>
 			</div>
 		</div>
