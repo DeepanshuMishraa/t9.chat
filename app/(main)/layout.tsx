@@ -10,9 +10,11 @@ export default function MainLayout({
     <ConvexClientProvider>
       <SidebarProvider>
         <AppSidebar />
-        <main className="w-full min-h-svh pb-32">
+        <main className="w-full h-screen flex flex-col">
           <TopMenu />
-          {children}
+          <div className="flex-1 min-h-0">
+            {children}
+          </div>
         </main>
       </SidebarProvider>
     </ConvexClientProvider>

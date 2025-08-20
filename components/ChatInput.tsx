@@ -42,8 +42,6 @@ export default function ChatInput() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!text.trim() || !model) return;
-
-    // Create thread in Convex, then navigate and pass the initial message + model via search params
     const title = text.slice(0, 60) || "New chat";
     try {
       const threadId = (await createThread({ title })) as string;
@@ -57,9 +55,14 @@ export default function ChatInput() {
   };
 
   return (
-    <div className="fixed left-0 right-0 md:left-[var(--sidebar-width)] bottom-0 z-40 px-4 py-3 md:py-4 pointer-events-none">
-      <div className="pointer-events-auto mx-auto w-full max-w-[min(42rem,calc(100vw-2rem))]">
-        <PromptInput onSubmit={handleSubmit} className="relative rounded-2xl border border-border/40 bg-muted/20 shadow-lg">
+    <div className="fixed left-0 right-0 bottom-0 z-40 px-4 pb-3 md:pb-4 pt-0 pointer-events-none relative">
+      <div
+        aria-hidden
+        className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/90 to-transparent backdrop-blur supports-[backdrop-filter]:from-background/70 pointer-events-none"
+      />
+      <div className="pointer-events-auto mx-auto w-full max-w-[min(42rem,calc(100vw-2rem))] relative z-10">
+        <div aria-hidden className="h-0" />
+        <PromptInput onSubmit={handleSubmit} className="relative rounded-2xl border border-border/50 bg-background/95 supports-[backdrop-filter]:bg-background/70 backdrop-blur shadow-xl">
           <PromptInputTextarea
             placeholder="Type your message here..."
             className="min-h-12 px-4 py-4 text-base placeholder:text-muted-foreground/70"
