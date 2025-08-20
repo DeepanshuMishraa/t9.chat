@@ -5,7 +5,11 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { AI_MODELS, MODEL_CONFIGS, type AIModel } from "@/lib/models";
 import { useApiKeyStore } from "@/store/apikeystore";
-// Removed Conversation wrapper to avoid nested scrollbars
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { Response } from "@/components/ai-elements/response";
 import {
@@ -53,12 +57,10 @@ export default function ThreadPage() {
 
   const initialSentRef = useRef(false);
   useEffect(() => {
-    // If we were navigated here with an initial message/model in the URL, send it once.
     const q = search.get("q");
     const m = search.get("m") as AIModel | null;
     const initialModel = m && AI_MODELS.includes(m as AIModel) ? (m as AIModel) : (model ?? availableModels[0]);
     if (q && q.trim() && !initialSentRef.current) {
-      // Kick off the model call
       const chosen = initialModel ?? availableModels[0];
       const cfg = chosen ? MODEL_CONFIGS[chosen] : null;
       const key = cfg ? keys[cfg.provider] : undefined;
@@ -67,10 +69,8 @@ export default function ThreadPage() {
         { text: q },
         { body: { model: chosen }, headers } as any
       );
-      // Persist the user message to Convex
       createMessage({ threadId: threadId as any, role: "user", content: q });
       initialSentRef.current = true;
-      // Remove the search params from the URL to avoid resending on refresh
       const url = new URL(window.location.href);
       url.searchParams.delete("q");
       url.searchParams.delete("m");
@@ -84,13 +84,11 @@ export default function ThreadPage() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!text.trim()) return;
-    // Persist the user message first (fire and forget)
     createMessage({ threadId: threadId as any, role: "user", content: text });
     const chosen = model ?? availableModels[0];
     const cfg = chosen ? MODEL_CONFIGS[chosen] : null;
     const key = cfg ? keys[cfg.provider] : undefined;
     const headers = cfg && key ? { [cfg.headerKey]: key } : undefined;
-    // Then send to the model API with provider header
     sendMessage(
       { text },
       { body: { model: chosen }, headers } as any
@@ -98,7 +96,6 @@ export default function ThreadPage() {
     setText("");
   };
 
-  // Persist the latest assistant message to Convex when messages update
   const lastAssistant = useMemo(() => {
     const reversed = [...messages].reverse();
     return reversed.find((m) => m.role === "assistant");
@@ -117,40 +114,55 @@ export default function ThreadPage() {
       }
     } catch (e) {
       console.error(e);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    } 
   }, [lastAssistant]);
 
   return (
-    <>
-      <div className="mx-auto w-full max-w-4xl p-4 md:p-6 pb-40">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
+    <div className="flex flex-col h-full">
+      <Conversation className="flex-1 min-h-0">
+        <ConversationContent className="mx-auto w-full max-w-4xl p-4 md:p-6">
+          <div className="flex flex-col gap-4">
             {messages.map((message) => (
-              <div key={message.id} className={message.role === "user" ? "ml-auto max-w-[80%]" : "mr-auto max-w-[80%]"}>
+              <div 
+                key={message.id} 
+                className={message.role === "user" ? "ml-auto min-w-xl" : "mr-auto min-w-xl"}
+              >
                 <Message from={message.role}>
                   <MessageContent>
-                    {message.parts.map((part, i) => (
-                      part.type === 'text' ? (
-                        <Response key={`${message.id}-${i}`}>{part.text}</Response>
-                      ) : null
-                    ))}
+                    {message.parts.map((part, i) => {
+                      switch (part.type) {
+                        case 'text':
+                          return (
+                            <Response key={`${message.id}-${i}`}>
+                              {part.text}
+                            </Response>
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
                   </MessageContent>
                 </Message>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-      {/* Bottom-fixed input bar */}
-      <div className="fixed left-0 right-0 md:left-[var(--sidebar-width)] bottom-0 z-40 px-4 py-3 md:py-4 pointer-events-none">
-        <div className="pointer-events-auto mx-auto w-full max-w-[min(42rem,calc(100vw-2rem))]">
-          <PromptInput onSubmit={handleSubmit} className="relative rounded-2xl border border-border/40 bg-muted/20 shadow-lg">
-            <PromptInputTextarea onChange={(e) => setText(e.target.value)} value={text} className="min-h-12 px-4 py-4 text-base placeholder:text-muted-foreground/70" />
-            <PromptInputToolbar className="relative">
-              <PromptInputTools>
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      <div className="flex-shrink-0 p-4 bg-background">
+        <div className="mx-auto w-full max-w-2xl">
+          <PromptInput onSubmit={handleSubmit} className="relative rounded-2xl border border-border bg-background/50 backdrop-blur-sm shadow-sm">
+            <PromptInputTextarea 
+              onChange={(e) => setText(e.target.value)} 
+              value={text} 
+              placeholder="Type your message here..."
+              className="min-h-[80px] px-4 py-4 text-base placeholder:text-muted-foreground/60 resize-none border-0 bg-transparent focus:ring-0" 
+            />
+            <PromptInputToolbar className="flex items-center justify-between px-4 py-3 border-t border-border/50">
+              <PromptInputTools className="flex items-center gap-2">
                 <PromptInputModelSelect value={model} onValueChange={(v) => setModel(v as AIModel)}>
-                  <PromptInputModelSelectTrigger className="h-8 rounded-lg px-2">
+                  <PromptInputModelSelectTrigger className="h-9 rounded-lg px-3 text-sm bg-background/50 border border-border/50 hover:bg-background/80">
                     <PromptInputModelSelectValue />
                   </PromptInputModelSelectTrigger>
                   <PromptInputModelSelectContent>
@@ -162,11 +174,15 @@ export default function ThreadPage() {
                   </PromptInputModelSelectContent>
                 </PromptInputModelSelect>
               </PromptInputTools>
-              <PromptInputSubmit disabled={!text} status={status} className="absolute right-1 bottom-1 rounded-xl" />
+              <PromptInputSubmit 
+                disabled={!text.trim()} 
+                status={status} 
+                className="h-9 w-9 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground" 
+              />
             </PromptInputToolbar>
           </PromptInput>
         </div>
       </div>
-    </>
+    </div>
   );
 }
