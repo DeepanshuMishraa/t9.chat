@@ -24,7 +24,7 @@ import {
   PromptInputToolbar,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export default function ThreadPage() {
@@ -54,6 +54,33 @@ export default function ThreadPage() {
   const { messages, status, sendMessage } = useChat();
 
   const createMessage = useMutation(api.query.createMessages);
+  const savedMessages = useQuery(api.query.getMessages, { threadId: threadId as any });
+
+  const allMessages = useMemo(() => {
+    if (!savedMessages) return messages;
+    
+    const savedMessageMap = new Map(savedMessages.map(msg => [msg.content, msg]));
+    const combinedMessages = [...messages];
+    
+    savedMessages.forEach(savedMsg => {
+      const exists = messages.some(msg => 
+        msg.parts.some(part => part.type === 'text' && part.text === savedMsg.content)
+      );
+      if (!exists) {
+        combinedMessages.unshift({
+          id: savedMsg._id,
+          role: savedMsg.role as any,
+          parts: [{ type: 'text' as const, text: savedMsg.content }]
+        });
+      }
+    });
+    
+    return combinedMessages.sort((a, b) => {
+      const aTime = savedMessageMap.get(a.parts.find(p => p.type === 'text')?.text || '')?.createdAt || 0;
+      const bTime = savedMessageMap.get(b.parts.find(p => p.type === 'text')?.text || '')?.createdAt || 0;
+      return aTime - bTime;
+    });
+  }, [messages, savedMessages]);
 
   const initialSentRef = useRef(false);
   useEffect(() => {
@@ -100,29 +127,35 @@ export default function ThreadPage() {
     const reversed = [...messages].reverse();
     return reversed.find((m) => m.role === "assistant");
   }, [messages]);
+  
   const savedAssistantIds = useRef<Set<string>>(new Set());
+  const lastSavedContent = useRef<string>("");
+  
   useEffect(() => {
-    if (!lastAssistant) return;
+    if (!lastAssistant || status === "streaming") return;
+    
     try {
       const content = lastAssistant.parts
         .filter((p: any) => p.type === "text")
         .map((p: any) => p.text)
         .join("");
-      if (content && !savedAssistantIds.current.has(lastAssistant.id)) {
+        
+      if (content && content !== lastSavedContent.current && !savedAssistantIds.current.has(lastAssistant.id)) {
         savedAssistantIds.current.add(lastAssistant.id);
+        lastSavedContent.current = content;
         createMessage({ threadId: threadId as any, role: "assistant", content });
       }
     } catch (e) {
       console.error(e);
     } 
-  }, [lastAssistant]);
+  }, [lastAssistant, status, createMessage, threadId]);
 
   return (
     <div className="flex flex-col h-full">
       <Conversation className="flex-1 min-h-0">
         <ConversationContent className="mx-auto w-full max-w-4xl p-4 md:p-6">
           <div className="flex flex-col gap-4">
-            {messages.map((message) => (
+            {allMessages.map((message) => (
               <div 
                 key={message.id} 
                 className={message.role === "user" ? "ml-auto min-w-xl" : "mr-auto min-w-xl"}
