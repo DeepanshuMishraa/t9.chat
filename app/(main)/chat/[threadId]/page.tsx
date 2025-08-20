@@ -54,7 +54,40 @@ export default function ThreadPage() {
   const { messages, status, sendMessage } = useChat();
 
   const createMessage = useMutation(api.query.createMessages);
+  const updateThread = useMutation(api.query.updateThread);
   const savedMessages = useQuery(api.query.getMessages, { threadId: threadId as any });
+
+  const generateSummary = async (messages: any[]) => {
+    const keys = useApiKeyStore.getState().keys;
+    const response = await fetch('/api/summary', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Google-API-Key': keys.google || '',
+      },
+      body: JSON.stringify({ messages }),
+    });
+    const data = await response.json();
+    return data.success ? data.summary : null;
+  };
+
+  const titleUpdated = useRef(false);
+  useEffect(() => {
+    if (titleUpdated.current || !savedMessages || savedMessages.length < 2) return;
+    
+    const firstTwo = savedMessages.slice(0, 2);
+    if (firstTwo.length === 2 && firstTwo[0].role === 'user' && firstTwo[1].role === 'assistant') {
+      titleUpdated.current = true;
+      generateSummary(firstTwo.map(msg => ({ role: msg.role, content: msg.content })))
+        .then(summary => {
+          if (summary) {
+            const title = summary.slice(0, 50) + (summary.length > 50 ? '...' : '');
+            updateThread({ threadId: threadId as any, title });
+          }
+        })
+        .catch(console.error);
+    }
+  }, [savedMessages, updateThread, threadId]);
 
   const allMessages = useMemo(() => {
     if (!savedMessages) return messages;

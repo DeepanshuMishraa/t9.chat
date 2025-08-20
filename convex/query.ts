@@ -62,6 +62,7 @@ export const getThreads = query({
 
     const threads = await ctx.db.query("threads")
       .filter((q) => q.eq(q.field("userId"), user._id))
+      .order("desc")
       .collect();
 
     return threads;
@@ -144,6 +145,48 @@ export const getMessages = query({
   }
 })
 
+
+export const updateThread = mutation({
+  args: {
+    threadId: v.id("threads"),
+    title: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const auth = createAuth(ctx);
+
+    const header = await betterAuthComponent.getHeaders(ctx);
+    const session = await auth.api.getSession({
+      headers: header,
+    });
+
+    if (!session) {
+      throw new ConvexError("Unauthorized")
+    }
+
+    const thread = await ctx.db.get(args.threadId);
+
+    if (!thread) {
+      throw new ConvexError("Thread not found")
+    }
+
+    const user = await ctx.db.get(thread.userId);
+
+    if (!user) {
+      throw new ConvexError("User not found")
+    }
+
+    if (user._id !== session.user.id) {
+      throw new ConvexError("Unauthorized")
+    }
+
+    await ctx.db.patch(args.threadId, {
+      title: args.title,
+      updatedAt: Date.now(),
+    });
+
+    return args.threadId;
+  }
+})
 
 export const  createMessages = mutation({
   args:{
